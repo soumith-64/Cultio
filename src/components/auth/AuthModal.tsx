@@ -40,6 +40,13 @@ export const AuthModal: React.FC<AuthModalProps> = ({ initialRole }) => {
   // Phone verification state
   const [isVerifyingPhone, setIsVerifyingPhone] = useState(false);
   const [phoneSuccessMsg, setPhoneSuccessMsg] = useState<string | null>(null);
+  const [verifiedPhoneData, setVerifiedPhoneData] = useState<{
+    userJsonUrl: string;
+    phone: string;
+    phoneNumber: string;
+  } | null>(null);
+  const [phoneUserName, setPhoneUserName] = useState('');
+  const [isSubmittingName, setIsSubmittingName] = useState(false);
 
   // Email & Password state
   const [email, setEmail] = useState('');
@@ -69,6 +76,9 @@ export const AuthModal: React.FC<AuthModalProps> = ({ initialRole }) => {
     setShowAuthModal(false);
     setErrorMsg(null);
     setPhoneSuccessMsg(null);
+    setVerifiedPhoneData(null);
+    setPhoneUserName('');
+    setIsSubmittingName(false);
   };
 
   const handleInstantDemoExpertLogin = async () => {
@@ -101,19 +111,67 @@ export const AuthModal: React.FC<AuthModalProps> = ({ initialRole }) => {
   const handlePhoneSuccess = async (userJsonUrl: string) => {
     setIsVerifyingPhone(true);
     setErrorMsg(null);
-    setPhoneSuccessMsg('Phone verified! Fetching authenticated profile...');
+    setPhoneSuccessMsg('OTP verified! Fetching phone details...');
     try {
-      const res = await loginWithPhoneEmail(userJsonUrl);
-      if (!res.success && res.error) {
-        setErrorMsg(res.error);
+      const res = await fetch('/api/auth/phone-verify', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ user_json_url: userJsonUrl }),
+      });
+      const data = await res.json();
+      if (!data.success) {
+        setErrorMsg(data.error || 'Failed to authenticate phone number.');
         setPhoneSuccessMsg(null);
+        return;
       }
+
+      // Step transition: Ask user for their name
+      setVerifiedPhoneData({
+        userJsonUrl,
+        phone: data.phone || data.phoneNumber || '',
+        phoneNumber: data.phoneNumber || '',
+      });
+      if (data.displayName && !data.displayName.startsWith('Farmer ')) {
+        setPhoneUserName(data.displayName);
+      } else {
+        setPhoneUserName('');
+      }
+      setPhoneSuccessMsg(null);
     } catch {
-      setErrorMsg('Failed to complete phone login. Please try again.');
+      setErrorMsg('Failed to complete phone verification. Please try again.');
       setPhoneSuccessMsg(null);
     } finally {
       setIsVerifyingPhone(false);
     }
+  };
+
+  const handleFinalizePhoneLogin = async (customName?: string) => {
+    if (!verifiedPhoneData) return;
+    setIsSubmittingName(true);
+    setErrorMsg(null);
+    try {
+      const chosenName = customName !== undefined ? customName.trim() : phoneUserName.trim();
+      const res = await loginWithPhoneEmail(verifiedPhoneData.userJsonUrl, chosenName);
+      if (!res.success && res.error) {
+        setErrorMsg(res.error);
+      } else {
+        setVerifiedPhoneData(null);
+        setPhoneUserName('');
+      }
+    } catch {
+      setErrorMsg('Failed to complete sign in. Please try again.');
+    } finally {
+      setIsSubmittingName(false);
+    }
+  };
+
+  const handleNameSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!phoneUserName.trim()) {
+      setErrorMsg('Please enter your full name.');
+      return;
+    }
+    handleFinalizePhoneLogin(phoneUserName.trim());
   };
 
   const handleEmailSubmit = async (e: React.FormEvent) => {
@@ -161,7 +219,110 @@ export const AuthModal: React.FC<AuthModalProps> = ({ initialRole }) => {
             <X className="w-4 h-4" />
           </button>
 
-          {/* TWO DEDICATED TABS: Normal Person (Farmer) vs Agricultural Expert */}
+          {verifiedPhoneData ? (
+            <div className="space-y-4 animate-fadeIn">
+              {/* Verified Phone Status Banner */}
+              <div className="p-3.5 rounded-2xl bg-[#E8F5E9] border border-[#C8E6C9] flex items-center justify-between shadow-2xs">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-8 h-8 rounded-xl bg-[#2E7D32] text-white flex items-center justify-center shrink-0 shadow-xs">
+                    <CheckCircle2 className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <span className="text-[10px] font-extrabold text-[#2E7D32] uppercase tracking-wider block">
+                      OTP Verified Successfully
+                    </span>
+                    <span className="text-xs text-[#4E342E] font-mono font-bold">
+                      {verifiedPhoneData.phone}
+                    </span>
+                  </div>
+                </div>
+                <span className="text-[10px] font-bold uppercase px-2 py-0.5 rounded-full bg-[#2E7D32] text-white">
+                  Verified
+                </span>
+              </div>
+
+              {/* Header Greeting */}
+              <div className="text-center pt-1">
+                <div className="w-12 h-12 rounded-2xl bg-[#2E7D32]/10 text-[#2E7D32] flex items-center justify-center mx-auto mb-2 border border-[#2E7D32]/20">
+                  <User className="w-6 h-6" />
+                </div>
+                <h3 className="text-xl font-extrabold text-[#4E342E] tracking-tight">
+                  What is your name?
+                </h3>
+                <p className="text-xs text-[#795548] mt-1 leading-relaxed">
+                  Please enter your full name so field reports, soil telemetry, and diagnoses are personalized to you.
+                </p>
+              </div>
+
+              {errorMsg && (
+                <div className="p-3 rounded-xl bg-[#D32F2F]/10 border border-[#D32F2F]/30 text-[#B71C1C] text-xs font-medium">
+                  {errorMsg}
+                </div>
+              )}
+
+              {/* Name Input Form */}
+              <form onSubmit={handleNameSubmit} className="space-y-4 pt-1">
+                <div>
+                  <label className="block text-xs font-bold text-[#4E342E] mb-1.5">
+                    Your Full Name <span className="text-[#D32F2F]">*</span>
+                  </label>
+                  <div className="relative">
+                    <User className="w-4 h-4 text-[#795548] absolute left-3.5 top-1/2 -translate-y-1/2" />
+                    <input
+                      type="text"
+                      required
+                      autoFocus
+                      placeholder="e.g. Ramesh Patel"
+                      value={phoneUserName}
+                      onChange={(e) => setPhoneUserName(e.target.value)}
+                      className="w-full pl-10 pr-4 py-3 rounded-xl border-2 border-[#2E7D32]/40 focus:border-[#2E7D32] focus:ring-2 focus:ring-[#2E7D32]/20 text-sm font-semibold text-[#4E342E] bg-white transition-all outline-none"
+                    />
+                  </div>
+                </div>
+
+                <Button
+                  type="submit"
+                  variant="primary"
+                  size="lg"
+                  isLoading={isSubmittingName}
+                  disabled={isSubmittingName}
+                  className="w-full font-bold shadow-earth py-3 text-sm justify-center"
+                  rightIcon={<ArrowRight className="w-4 h-4" />}
+                >
+                  <span>Complete Sign In & Enter</span>
+                </Button>
+
+                <div className="flex items-center justify-between text-xs pt-2 border-t border-[#E0D7C6]">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setVerifiedPhoneData(null);
+                      setPhoneSuccessMsg(null);
+                      setErrorMsg(null);
+                    }}
+                    disabled={isSubmittingName}
+                    className="text-[#795548] hover:text-[#4E342E] cursor-pointer"
+                  >
+                    ← Use different number
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const fallback = `Farmer ${verifiedPhoneData.phoneNumber ? verifiedPhoneData.phoneNumber.slice(-4) : 'User'}`;
+                      handleFinalizePhoneLogin(fallback);
+                    }}
+                    disabled={isSubmittingName}
+                    className="text-[#2E7D32] hover:underline font-bold cursor-pointer"
+                  >
+                    Skip (Use default name)
+                  </button>
+                </div>
+              </form>
+            </div>
+          ) : (
+            <>
+              {/* TWO DEDICATED TABS: Normal Person (Farmer) vs Agricultural Expert */}
           <div className="grid grid-cols-2 gap-1.5 p-1 bg-[#F9F6F0] rounded-2xl border border-[#E0D7C6] mb-4">
             <button
               type="button"
@@ -551,6 +712,8 @@ export const AuthModal: React.FC<AuthModalProps> = ({ initialRole }) => {
                 )}
               </div>
             </div>
+          )}
+            </>
           )}
         </div>
       </div>

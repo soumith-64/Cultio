@@ -45,7 +45,7 @@ interface AuthContextType {
   ) => Promise<{ success: boolean; error?: string }>;
   sendPhoneOtp: (phoneNumber: string) => Promise<{ success: boolean; error?: string }>;
   verifyPhoneOtp: (code: string) => Promise<{ success: boolean; error?: string }>;
-  loginWithPhoneEmail: (userJsonUrl: string) => Promise<{ success: boolean; error?: string }>;
+  loginWithPhoneEmail: (userJsonUrl: string, customDisplayName?: string) => Promise<{ success: boolean; error?: string }>;
   selectRole: (role: UserRole) => Promise<void>;
   verifyAndElevateExpert: (keyOrId: string) => Promise<{ success: boolean; error?: string }>;
   updateUserProfile: (updates: Partial<UserProfile>) => Promise<void>;
@@ -452,7 +452,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   // Real Phone.Email Gateway OTP Verification & Authentication
-  const loginWithPhoneEmail = async (userJsonUrl: string): Promise<{ success: boolean; error?: string }> => {
+  const loginWithPhoneEmail = async (
+    userJsonUrl: string,
+    customDisplayName?: string
+  ): Promise<{ success: boolean; error?: string }> => {
     setIsLoading(true);
     try {
       const res = await fetch('/api/auth/phone-verify', {
@@ -469,10 +472,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const isApproved = isApprovedExpertEmail(data.phone) || isApprovedExpertEmail(data.phoneNumber);
       const assignedRole: UserRole = isApproved ? 'expert' : 'farmer';
 
+      const resolvedDisplayName =
+        customDisplayName?.trim() ||
+        data.displayName ||
+        `Farmer ${data.phoneNumber ? data.phoneNumber.slice(-4) : 'User'}`;
+
       const phoneProfile: UserProfile = {
         uid: `phone_${data.phoneNumber || Date.now()}`,
         email: null,
-        displayName: data.displayName || `Farmer ${data.phoneNumber ? data.phoneNumber.slice(-4) : 'User'}`,
+        displayName: resolvedDisplayName,
         photoURL: null,
         phoneNumber: data.phone,
         role: assignedRole,
