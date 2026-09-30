@@ -1,11 +1,12 @@
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { isFirebaseConfigured } from '@/config/firebase';
 import Link from 'next/link';
 import { Sprout, ShieldCheck, User, LogOut, ArrowLeftRight, Cloud } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
+import { UserProfileModal } from '@/components/auth/UserProfileModal';
 
 interface NavbarProps {
   currentView: 'farmer' | 'expert' | 'landing' | 'scan' | 'report';
@@ -14,6 +15,7 @@ interface NavbarProps {
 
 export const Navbar: React.FC<NavbarProps> = ({ currentView, onNavigate }) => {
   const { user, isAuthenticated, signOut, setShowAuthModal, selectRole } = useAuth();
+  const [showProfileModal, setShowProfileModal] = useState(false);
 
   return (
     <header className="sticky top-0 z-40 bg-[#FFFFFF]/95 backdrop-blur-md border-b border-[#E0D7C6] transition-all">
@@ -86,14 +88,29 @@ export const Navbar: React.FC<NavbarProps> = ({ currentView, onNavigate }) => {
           {/* User Profile / Auth Action */}
           {isAuthenticated ? (
             <div className="flex items-center gap-2">
-              <div className="hidden lg:flex flex-col text-right">
-                <span className="text-xs font-bold text-[#4E342E] leading-tight">
-                  {user?.displayName || 'Active Cultivator'}
-                </span>
-                <span className="text-[10px] text-[#795548] uppercase tracking-wider">
-                  {user?.role === 'expert' ? 'Agronomist' : 'Farmer'}
-                </span>
-              </div>
+              <button
+                onClick={() => setShowProfileModal(true)}
+                className="flex items-center gap-2 px-2.5 py-1.5 rounded-xl border border-[#E0D7C6] bg-white hover:bg-[#F9F6F0] transition-colors cursor-pointer group text-left"
+                title="View Account & Accreditation Profile"
+                aria-label="View Profile"
+              >
+                <div className="w-7 h-7 rounded-lg bg-[#2E7D32]/10 border border-[#2E7D32]/20 flex items-center justify-center text-[#2E7D32] overflow-hidden">
+                  {user?.photoURL ? (
+                    <img src={user.photoURL} alt="" className="w-full h-full object-cover" />
+                  ) : (
+                    <User className="w-4 h-4" />
+                  )}
+                </div>
+                <div className="hidden lg:flex flex-col text-left">
+                  <span className="text-xs font-bold text-[#4E342E] leading-tight group-hover:text-[#2E7D32] transition-colors">
+                    {user?.displayName || 'Cultivator'}
+                  </span>
+                  <span className="text-[9px] text-[#795548] uppercase tracking-wider font-semibold">
+                    {user?.role === 'expert' ? 'Agronomist' : 'Farmer'}
+                  </span>
+                </div>
+              </button>
+
               <button
                 onClick={signOut}
                 className="w-9 h-9 rounded-xl border border-[#E0D7C6] bg-[#FFFFFF] hover:bg-[#F9F6F0] flex items-center justify-center text-[#795548] hover:text-[#D32F2F] transition-colors cursor-pointer"
@@ -113,6 +130,12 @@ export const Navbar: React.FC<NavbarProps> = ({ currentView, onNavigate }) => {
               Sign In
             </Button>
           )}
+
+          {/* User Profile Modal */}
+          <UserProfileModal
+            isOpen={showProfileModal}
+            onClose={() => setShowProfileModal(false)}
+          />
         </div>
       </div>
     </header>

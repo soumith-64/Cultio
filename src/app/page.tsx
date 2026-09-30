@@ -13,6 +13,8 @@ import { ExpertDashboard } from '@/components/expert/ExpertDashboard';
 import { AuthModal } from '@/components/auth/AuthModal';
 import { RoleModal } from '@/components/auth/RoleModal';
 import { PrivacyConsentModal } from '@/components/auth/PrivacyConsentModal';
+import { UserProfileModal } from '@/components/auth/UserProfileModal';
+import { MobileBottomNav } from '@/components/layout/MobileBottomNav';
 import { ReportContextualSkeleton } from '@/components/ui/Skeleton';
 import {
   CropReport,
@@ -48,6 +50,7 @@ function CultivoApp() {
   const [isProcessing, setIsProcessing] = useState<boolean>(false);
   const [pipelineSteps, setPipelineSteps] = useState<PipelineProgressStep[]>([]);
   const [pipelineCurrentLabel, setPipelineCurrentLabel] = useState<string>('');
+  const [showProfileModal, setShowProfileModal] = useState<boolean>(false);
 
   // Automatically adapt view based on user role when authenticated
   useEffect(() => {
@@ -377,7 +380,7 @@ function CultivoApp() {
       />
 
       {/* Main Content Area */}
-      <main className="flex-1 max-w-6xl w-full mx-auto px-4 sm:px-6 py-6 sm:py-8">
+      <main className="flex-1 max-w-6xl w-full mx-auto px-4 sm:px-6 py-6 sm:py-8 pb-24 md:pb-8">
         {/* VIEW 1: LANDING PAGE */}
         {currentView === 'landing' && (
           <LandingPage onStartDiagnosis={handleStartScan} />
@@ -442,6 +445,18 @@ function CultivoApp() {
       <AuthModal />
       <RoleModal />
       <PrivacyConsentModal />
+      <UserProfileModal
+        isOpen={showProfileModal}
+        onClose={() => setShowProfileModal(false)}
+      />
+
+      {/* Mobile Sticky Field Navigation */}
+      <MobileBottomNav
+        currentView={currentView}
+        onNavigate={setCurrentView}
+        onStartScan={handleStartScan}
+        onOpenProfile={() => setShowProfileModal(true)}
+      />
 
       {/* Application Footer */}
       <Footer />

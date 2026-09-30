@@ -10,6 +10,7 @@ import { SeverityBadge, StatusBadge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { ExpertReviewModal } from '@/components/expert/ExpertReviewModal';
 import { AuthModal } from '@/components/auth/AuthModal';
+import { UserProfileModal } from '@/components/auth/UserProfileModal';
 import {
   ShieldCheck,
   Clock,
@@ -43,6 +44,7 @@ export default function ExpertPortalPage() {
   const [severityFilter, setSeverityFilter] = useState<'ALL' | 'CRITICAL' | 'MODERATE' | 'LOW'>('ALL');
   const [searchQuery, setSearchQuery] = useState('');
   const [showAuthGateModal, setShowAuthGateModal] = useState(false);
+  const [showProfileModal, setShowProfileModal] = useState(false);
 
   // Subscribe in real-time to the expert queue
   useEffect(() => {
@@ -142,18 +144,27 @@ export default function ExpertPortalPage() {
 
             {isAuthenticated ? (
               <div className="flex items-center gap-2">
-                <div className="text-right hidden sm:block">
-                  <div className="text-xs font-bold text-[#4E342E] leading-tight">
-                    {user?.displayName || 'Dr. Agronomist'}
+                <button
+                  onClick={() => setShowProfileModal(true)}
+                  className="flex items-center gap-2 px-2.5 py-1.5 rounded-xl border border-[#E0D7C6] bg-white hover:bg-[#F9F6F0] transition-colors cursor-pointer text-left"
+                  title="View Agronomist Accreditation & Profile"
+                >
+                  <div className="w-7 h-7 rounded-lg bg-[#2E7D32]/10 border border-[#2E7D32]/20 flex items-center justify-center text-[#2E7D32] overflow-hidden">
+                    <ShieldCheck className="w-4 h-4 text-[#2E7D32]" />
                   </div>
-                  <div className="text-[10px] text-[#2E7D32] font-semibold">
-                    {user?.specialization || 'Certified Crop Advisor'}
+                  <div className="text-right hidden sm:block">
+                    <div className="text-xs font-bold text-[#4E342E] leading-tight">
+                      {user?.displayName || 'Dr. Agronomist'}
+                    </div>
+                    <div className="text-[10px] text-[#2E7D32] font-semibold">
+                      {user?.specialization || 'Certified Crop Advisor'}
+                    </div>
                   </div>
-                </div>
+                </button>
 
                 <button
                   onClick={signOut}
-                  className="w-9 h-9 rounded-xl border border-[#E0D7C6] bg-white hover:bg-[#F9F6F0] flex items-center justify-center text-[#795548] transition-colors cursor-pointer"
+                  className="w-9 h-9 rounded-xl border border-[#E0D7C6] bg-white hover:bg-[#F9F6F0] flex items-center justify-center text-[#795548] hover:text-[#D32F2F] transition-colors cursor-pointer"
                   title="Sign Out"
                 >
                   <LogOut className="w-4 h-4" />
@@ -586,6 +597,12 @@ export default function ExpertPortalPage() {
       {showAuthGateModal && (
         <AuthModal initialRole="expert" />
       )}
+
+      {/* User Profile Modal */}
+      <UserProfileModal
+        isOpen={showProfileModal}
+        onClose={() => setShowProfileModal(false)}
+      />
     </div>
   );
 }
