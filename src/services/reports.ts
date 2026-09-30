@@ -73,13 +73,7 @@ export class ReportsService {
    * Storing previous analysis data for future trend suggestions
    */
   public static async createReport(report: CropReport): Promise<void> {
-    if (isFirebaseConfigured && db) {
-      const docRef = doc(db, REPORTS_COLLECTION, report.id);
-      await setDoc(docRef, report);
-      return;
-    }
-
-    // Local live persistence
+    // 1. Persist locally first for zero-latency UI updates & offline fallback
     const reports = getLocalReports();
     const existingIndex = reports.findIndex((r) => r.id === report.id);
     if (existingIndex >= 0) {
@@ -88,6 +82,16 @@ export class ReportsService {
       reports.unshift(report);
     }
     saveLocalReports(reports);
+
+    // 2. Synchronize to Cloud Firestore if connected
+    if (isFirebaseConfigured && db) {
+      try {
+        const docRef = doc(db, REPORTS_COLLECTION, report.id);
+        await setDoc(docRef, report);
+      } catch (err) {
+        console.warn('[ReportsService] Firestore createReport sync warning:', err);
+      }
+    }
   }
 
   /**
@@ -99,18 +103,23 @@ export class ReportsService {
   ): Promise<void> {
     const now = new Date().toISOString();
 
-    if (isFirebaseConfigured && db) {
-      const docRef = doc(db, REPORTS_COLLECTION, reportId);
-      await updateDoc(docRef, { status, updated_at: now });
-      return;
-    }
-
+    // 1. Update local store
     const reports = getLocalReports();
     const report = reports.find((r) => r.id === reportId);
     if (report) {
       report.status = status;
       report.updated_at = now;
       saveLocalReports(reports);
+    }
+
+    // 2. Synchronize to Cloud Firestore
+    if (isFirebaseConfigured && db) {
+      try {
+        const docRef = doc(db, REPORTS_COLLECTION, reportId);
+        await updateDoc(docRef, { status, updated_at: now });
+      } catch (err) {
+        console.warn('[ReportsService] Firestore updateReportStatus warning:', err);
+      }
     }
   }
 
@@ -124,16 +133,7 @@ export class ReportsService {
   ): Promise<void> {
     const now = new Date().toISOString();
 
-    if (isFirebaseConfigured && db) {
-      const docRef = doc(db, REPORTS_COLLECTION, reportId);
-      await updateDoc(docRef, {
-        expert_review: review,
-        status: 'EXPERT_REVIEWED',
-        updated_at: now,
-      });
-      return;
-    }
-
+    // 1. Update local store
     const reports = getLocalReports();
     const report = reports.find((r) => r.id === reportId);
     if (report) {
@@ -141,6 +141,20 @@ export class ReportsService {
       report.status = 'EXPERT_REVIEWED';
       report.updated_at = now;
       saveLocalReports(reports);
+    }
+
+    // 2. Synchronize to Cloud Firestore
+    if (isFirebaseConfigured && db) {
+      try {
+        const docRef = doc(db, REPORTS_COLLECTION, reportId);
+        await updateDoc(docRef, {
+          expert_review: review,
+          status: 'EXPERT_REVIEWED',
+          updated_at: now,
+        });
+      } catch (err) {
+        console.warn('[ReportsService] Firestore submitExpertReview warning:', err);
+      }
     }
   }
 
@@ -212,10 +226,10 @@ export class ReportsService {
     callback: (reports: CropReport[]) => void
   ): Unsubscribe {
     if (isFirebaseConfigured && db) {
+      // Query single field without multi-field composite index dependency
       const q = query(
         collection(db, REPORTS_COLLECTION),
-        where('farmer_id', '==', farmerId),
-        orderBy('created_at', 'desc')
+        where('farmer_id', '==', farmerId)
       );
 
       return onSnapshot(
@@ -225,10 +239,17 @@ export class ReportsService {
           snapshot.forEach((docSnap) => {
             list.push(docSnap.data() as CropReport);
           });
+          // Sort client-side by created_at descending
+          list.sort(
+            (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+          );
           callback(list);
         },
         (error) => {
-          console.error('[ReportsService] Farmer reports subscription error:', error);
+          console.warn('[ReportsService] Farmer reports subscription error, using local fallback:', error);
+          const reports = getLocalReports();
+          const userReports = reports.filter((r) => r.farmer_id === farmerId);
+          callback(userReports);
         }
       );
     }
@@ -259,8 +280,7 @@ export class ReportsService {
   ): Unsubscribe {
     if (isFirebaseConfigured && db) {
       const q = query(
-        collection(db, REPORTS_COLLECTION),
-        orderBy('created_at', 'desc')
+        collection(db, REPORTS_COLLECTION)
       );
 
       return onSnapshot(
@@ -270,10 +290,16 @@ export class ReportsService {
           snapshot.forEach((docSnap) => {
             list.push(docSnap.data() as CropReport);
           });
+          // Sort client-side by created_at descending
+          list.sort(
+            (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+          );
           callback(list);
         },
         (error) => {
-          console.error('[ReportsService] Expert queue subscription error:', error);
+          console.warn('[ReportsService] Expert queue subscription error, using local fallback:', error);
+          const reports = getLocalReports();
+          callback(reports);
         }
       );
     }

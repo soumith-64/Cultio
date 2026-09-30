@@ -118,73 +118,93 @@ export class ImageStorageService {
   }
 
   /**
-   * Upload image to Firebase Storage (or return local dataURL if mock mode)
+   * Upload image to Hostinger Server Storage (or local dataURL fallback)
+   * Avoids requiring a paid Firebase Blaze plan for media storage
    */
   public static async uploadCropImage(
     file: File,
     userId: string,
     onProgress?: UploadProgressCallback
   ): Promise<{ downloadUrl: string; storagePath: string }> {
-    // If Firebase Storage is not configured, simulate upload with progress
-    if (!isFirebaseConfigured || !storage) {
-      if (onProgress) {
-        onProgress(20);
-        await new Promise((r) => setTimeout(r, 200));
-        onProgress(65);
-        await new Promise((r) => setTimeout(r, 200));
-        onProgress(100);
-      }
+    if (onProgress) onProgress(20);
 
-      // Convert file to permanent Data URL for in-memory / local storage demo
-      return new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onload = () => {
-          resolve({
-            downloadUrl: reader.result as string,
-            storagePath: `local_storage/crops/${userId}/${Date.now()}_${file.name}`,
-          });
-        };
-        reader.onerror = reject;
-        reader.readAsDataURL(file);
+    // 1. Try uploading to Hostinger server /api/upload endpoint
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('userId', userId);
+
+      if (onProgress) onProgress(45);
+
+      const res = await fetch('/api/upload', {
+        method: 'POST',
+        body: formData,
       });
+
+      if (res.ok) {
+        const data = await res.json();
+        if (onProgress) onProgress(100);
+        return {
+          downloadUrl: data.downloadUrl || data.url,
+          storagePath: data.storagePath || data.url,
+        };
+      }
+    } catch (serverErr) {
+      console.warn('[ImageStorageService] Hostinger server upload fallback:', serverErr);
     }
 
-    // Real Firebase Storage upload
-    const cleanFileName = file.name.replace(/[^a-zA-Z0-9.-]/g, '_');
-    const storagePath = `crop_images/${userId}/${Date.now()}_${cleanFileName}`;
-    const storageRef = ref(storage, storagePath);
+    // 2. Optional: Try Firebase Storage if configured (and not billing-restricted)
+    if (isFirebaseConfigured && storage) {
+      try {
+        const cleanFileName = file.name.replace(/[^a-zA-Z0-9.-]/g, '_');
+        const storagePath = `crop_images/${userId}/${Date.now()}_${cleanFileName}`;
+        const storageRef = ref(storage, storagePath);
 
-    return new Promise((resolve, reject) => {
-      const uploadTask = uploadBytesResumable(storageRef, file, {
-        contentType: file.type || 'image/jpeg',
-        customMetadata: {
-          uploadedBy: userId,
-          uploadedAt: new Date().toISOString(),
-          app: 'Cultivo',
-        },
-      });
+        const uploadTask = uploadBytesResumable(storageRef, file, {
+          contentType: file.type || 'image/jpeg',
+          customMetadata: {
+            uploadedBy: userId,
+            uploadedAt: new Date().toISOString(),
+            app: 'Cultivo',
+          },
+        });
 
-      uploadTask.on(
-        'state_changed',
-        (snapshot) => {
-          const progress = Math.round(
-            (snapshot.bytesTransferred / snapshot.totalBytes) * 100
+        return await new Promise((resolve, reject) => {
+          uploadTask.on(
+            'state_changed',
+            (snapshot) => {
+              const progress = Math.round(
+                (snapshot.bytesTransferred / snapshot.totalBytes) * 100
+              );
+              if (onProgress) onProgress(progress);
+            },
+            (error) => {
+              console.warn('[Firebase Storage] Plan error, using local fallback:', error);
+              reject(error);
+            },
+            async () => {
+              const downloadUrl = await getDownloadURL(uploadTask.snapshot.ref);
+              resolve({ downloadUrl, storagePath });
+            }
           );
-          if (onProgress) onProgress(progress);
-        },
-        (error) => {
-          console.error('[Firebase Storage] Upload error:', error);
-          reject(new Error(`Failed to upload crop image: ${error.message}`));
-        },
-        async () => {
-          try {
-            const downloadUrl = await getDownloadURL(uploadTask.snapshot.ref);
-            resolve({ downloadUrl, storagePath });
-          } catch (err: any) {
-            reject(new Error(`Failed to retrieve image download URL: ${err.message}`));
-          }
-        }
-      );
+        });
+      } catch (fbErr) {
+        console.warn('[Firebase Storage] Falling back to local dataUrl:', fbErr);
+      }
+    }
+
+    // 3. Fallback: Convert file to permanent Data URL for browser display
+    if (onProgress) onProgress(100);
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => {
+        resolve({
+          downloadUrl: reader.result as string,
+          storagePath: `local_storage/crops/${userId}/${Date.now()}_${file.name}`,
+        });
+      };
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
     });
   }
 }
