@@ -20,9 +20,12 @@ import {
 } from 'firebase/auth';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 
+import { isApprovedExpertEmail, verifyExpertKeyOrId } from '@/config/experts';
+
 interface AuthContextType {
   user: UserProfile | null;
   isAuthenticated: boolean;
+  isApprovedExpert: boolean;
   isLoading: boolean;
   hasPrivacyConsent: boolean;
   showAuthModal: boolean;
@@ -43,6 +46,7 @@ interface AuthContextType {
   sendPhoneOtp: (phoneNumber: string) => Promise<{ success: boolean; error?: string }>;
   verifyPhoneOtp: (code: string) => Promise<{ success: boolean; error?: string }>;
   selectRole: (role: UserRole) => Promise<void>;
+  verifyAndElevateExpert: (keyOrId: string) => Promise<{ success: boolean; error?: string }>;
   updateUserProfile: (updates: Partial<UserProfile>) => Promise<void>;
   grantPrivacyConsent: () => void;
   declinePrivacyConsent: () => void;
@@ -140,8 +144,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             }
           }
 
+          const isApprovedEmail = isApprovedExpertEmail(firebaseUser.email);
+
           setUser((prev) => {
-            const currentRole = prev?.role || storedRole;
+            const currentRole = prev?.role || (isApprovedEmail ? 'expert' : storedRole);
+            const isAccredited = Boolean(isApprovedEmail || prev?.isAccreditedExpert || storedCreds.isAccreditedExpert);
+
             const updatedProfile: UserProfile = {
               uid: firebaseUser.uid,
               email: firebaseUser.email,
@@ -149,6 +157,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
               photoURL: firebaseUser.photoURL || prev?.photoURL || null,
               phoneNumber: firebaseUser.phoneNumber || prev?.phoneNumber || null,
               role: currentRole,
+              isAccreditedExpert: isAccredited,
               specialization: prev?.specialization || storedCreds.specialization,
               licenseNumber: prev?.licenseNumber || storedCreds.licenseNumber,
               institution: prev?.institution || storedCreds.institution,
@@ -410,18 +419,79 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  // Role Selection
+  // Only approved identities or accredited keys can act as experts
+  const isApprovedExpert = Boolean(
+    user && (
+      Boolean(user.isAccreditedExpert) ||
+      isApprovedExpertEmail(user.email) ||
+      (user.role === 'expert' && (
+        user.licenseNumber?.startsWith('ICAR-') ||
+        user.licenseNumber?.startsWith('CCA-')
+      ))
+    )
+  );
+
+  // Verification & Elevation to Accredited Agronomist
+  const verifyAndElevateExpert = async (keyOrId: string): Promise<{ success: boolean; error?: string }> => {
+    const check = verifyExpertKeyOrId(keyOrId);
+    if (!check.approved) {
+      return {
+        success: false,
+        error: check.reason || 'Authorization failed. This ID or key is not in the certified agronomist registry.',
+      };
+    }
+
+    const isEmail = isApprovedExpertEmail(keyOrId);
+    const existing = user;
+    const elevated: UserProfile = {
+      uid: existing?.uid || `expert_${Date.now()}`,
+      email: isEmail ? keyOrId.trim() : (existing?.email || 'expert@cultivo.ai'),
+      displayName: existing?.displayName || (isEmail ? 'Dr. Agronomist (Verified)' : 'Certified Crop Advisor (ICAR)'),
+      photoURL: existing?.photoURL || null,
+      phoneNumber: existing?.phoneNumber || null,
+      role: 'expert',
+      isAccreditedExpert: true,
+      licenseNumber: keyOrId.trim().toUpperCase(),
+      specialization: existing?.specialization || 'Crop Pathology & Soil Diagnostics',
+      institution: existing?.institution || 'Indian Council of Agricultural Research (ICAR)',
+      createdAt: existing?.createdAt || new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
+
+    persistUser(elevated);
+
+    if (isFirebaseConfigured && db && elevated.uid && !elevated.uid.startsWith('demo_') && !elevated.uid.startsWith('guest_')) {
+      try {
+        await setDoc(doc(db, 'users', elevated.uid), {
+          role: 'expert',
+          isAccreditedExpert: true,
+          licenseNumber: elevated.licenseNumber,
+          specialization: elevated.specialization,
+          institution: elevated.institution,
+        }, { merge: true });
+      } catch (err) {
+        console.warn('Firestore elevate warning:', err);
+      }
+    }
+
+    return { success: true };
+  };
+
+  // Role Selection — Restricted to approved experts for expert role
   const selectRole = async (role: UserRole) => {
+    if (role === 'expert' && !isApprovedExpert) {
+      console.warn('[AuthContext] Attempted to switch to expert role without approved credentials.');
+      return;
+    }
+
     if (!user) {
       const provisional: UserProfile = {
         uid: `guest_${Date.now()}`,
         email: null,
-        displayName: role === 'farmer' ? 'Guest Farmer' : 'Dr. Agronomist (Expert)',
+        displayName: 'Guest Farmer',
         photoURL: null,
         phoneNumber: null,
-        role,
-        specialization: role === 'expert' ? 'Plant Pathology' : undefined,
-        licenseNumber: role === 'expert' ? 'AGRI-CERT-2024' : undefined,
+        role: 'farmer',
         createdAt: new Date().toISOString(),
       };
       persistUser(provisional);
@@ -429,8 +499,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const updated: UserProfile = {
         ...user,
         role,
-        specialization: role === 'expert' ? user.specialization || 'Plant Pathology' : user.specialization,
-        licenseNumber: role === 'expert' ? user.licenseNumber || 'CCA-REG-VALID' : user.licenseNumber,
       };
 
       if (isFirebaseConfigured && db && user.uid && !user.uid.startsWith('demo_') && !user.uid.startsWith('guest_')) {
@@ -493,6 +561,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       value={{
         user,
         isAuthenticated: Boolean(user),
+        isApprovedExpert,
         isLoading,
         hasPrivacyConsent,
         showAuthModal,
@@ -507,6 +576,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         sendPhoneOtp,
         verifyPhoneOtp,
         selectRole,
+        verifyAndElevateExpert,
         updateUserProfile,
         grantPrivacyConsent,
         declinePrivacyConsent,

@@ -35,7 +35,7 @@ import {
 } from 'lucide-react';
 
 export default function ExpertPortalPage() {
-  const { user, isAuthenticated, signOut, selectRole } = useAuth();
+  const { user, isAuthenticated, signOut, selectRole, isApprovedExpert, verifyAndElevateExpert } = useAuth();
 
   const [reports, setReports] = useState<CropReport[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
@@ -45,6 +45,9 @@ export default function ExpertPortalPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [showAuthGateModal, setShowAuthGateModal] = useState(false);
   const [showProfileModal, setShowProfileModal] = useState(false);
+  const [accessPasskey, setAccessPasskey] = useState('');
+  const [isVerifyingKey, setIsVerifyingKey] = useState(false);
+  const [verificationError, setVerificationError] = useState<string | null>(null);
 
   // Subscribe in real-time to the expert queue
   useEffect(() => {
@@ -57,7 +60,22 @@ export default function ExpertPortalPage() {
     return () => unsubscribe();
   }, []);
 
-  const isExpert = user?.role === 'expert';
+  const canAccessExpertTerminal = Boolean(isAuthenticated && isApprovedExpert && user?.role === 'expert');
+
+  const handleUnlockTerminal = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!accessPasskey.trim()) return;
+    setIsVerifyingKey(true);
+    setVerificationError(null);
+
+    const res = await verifyAndElevateExpert(accessPasskey.trim());
+    setIsVerifyingKey(false);
+    if (!res.success) {
+      setVerificationError(res.error || 'Authorization failed. This ID is not in the certified agronomist registry.');
+    } else {
+      setAccessPasskey('');
+    }
+  };
 
   // Metrics computation
   const pendingReports = reports.filter((r) => r.status === 'PENDING_EXPERT');
@@ -187,8 +205,8 @@ export default function ExpertPortalPage() {
 
       {/* Main Content Area */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 py-6 sm:py-8 space-y-6">
-        {/* Gate View: When user is not authenticated or not in Expert role */}
-        {(!isAuthenticated || !isExpert) && (
+        {/* Gate View: When user is not authenticated or not an approved expert */}
+        {!canAccessExpertTerminal && (
           <div className="max-w-xl mx-auto my-12 bg-white border-2 border-[#2E7D32]/30 rounded-3xl p-6 sm:p-8 shadow-earth-lg text-center space-y-5 animate-fadeIn">
             <div className="w-16 h-16 rounded-2xl bg-[#2E7D32] text-white flex items-center justify-center mx-auto shadow-earth">
               <ShieldCheck className="w-9 h-9 text-[#81C784]" />
@@ -221,28 +239,47 @@ export default function ExpertPortalPage() {
               </div>
             </div>
 
-            <div className="flex flex-col sm:flex-row gap-3 pt-2">
-              <Button
-                variant="primary"
-                size="lg"
-                className="flex-1 font-bold shadow-earth"
-                onClick={() => setShowAuthGateModal(true)}
-                leftIcon={<ShieldCheck className="w-5 h-5" />}
-              >
-                Sign In as Expert
-              </Button>
+            {/* Direct Verification for Approved Institutional ID or Passkey */}
+            <form onSubmit={handleUnlockTerminal} className="space-y-3 pt-2 text-left">
+              <label className="block text-xs font-bold uppercase tracking-wider text-[#795548]">
+                Approved Institutional ID or ICAR Passkey
+              </label>
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  placeholder="Approved ID or passkey"
+                  value={accessPasskey}
+                  onChange={(e) => setAccessPasskey(e.target.value)}
+                  className="flex-1 px-3.5 py-2.5 rounded-xl border border-[#E0D7C6] bg-[#F9F6F0] text-sm text-[#4E342E] focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#2E7D32]"
+                  required
+                />
+                <Button
+                  type="submit"
+                  variant="primary"
+                  size="md"
+                  isLoading={isVerifyingKey}
+                  leftIcon={<ShieldCheck className="w-4 h-4" />}
+                  className="font-bold shadow-earth"
+                >
+                  Verify ID
+                </Button>
+              </div>
+              {verificationError && (
+                <p className="text-xs text-[#D32F2F] font-semibold bg-[#D32F2F]/10 p-2.5 rounded-xl border border-[#D32F2F]/20">
+                  {verificationError}
+                </p>
+              )}
+            </form>
 
-              {/* Quick role switch for evaluators */}
+            <div className="flex flex-col sm:flex-row gap-3 pt-1">
               <Button
                 variant="secondary"
-                size="lg"
-                className="flex-1 font-bold"
-                onClick={async () => {
-                  await selectRole('expert');
-                }}
-                leftIcon={<UserCheck className="w-5 h-5 text-[#2E7D32]" />}
+                size="md"
+                className="flex-1 font-bold text-xs"
+                onClick={() => setShowAuthGateModal(true)}
+                leftIcon={<ShieldCheck className="w-4 h-4 text-[#2E7D32]" />}
               >
-                Access Terminal Now
+                Sign In with Institutional Account
               </Button>
             </div>
 
@@ -258,7 +295,7 @@ export default function ExpertPortalPage() {
         )}
 
         {/* Authenticated Expert Dashboard */}
-        {isAuthenticated && isExpert && (
+        {canAccessExpertTerminal && (
           <div className="space-y-6 animate-fadeIn">
             {/* Expert Hero & KPI Overview */}
             <div className="bg-white border-2 border-[#2E7D32]/25 rounded-3xl p-6 sm:p-8 shadow-earth space-y-6">

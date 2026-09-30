@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { isFirebaseConfigured } from '@/config/firebase';
 import { useLanguage } from '@/context/LanguageContext';
@@ -26,12 +26,16 @@ interface UserProfileModalProps {
 }
 
 export const UserProfileModal: React.FC<UserProfileModalProps> = ({ isOpen, onClose }) => {
-  const { user, signOut, selectRole } = useAuth();
+  const { user, signOut, selectRole, isApprovedExpert, verifyAndElevateExpert } = useAuth();
   const { t } = useLanguage();
+  const [showVerification, setShowVerification] = useState(false);
+  const [accessKey, setAccessKey] = useState('');
+  const [isVerifying, setIsVerifying] = useState(false);
+  const [verificationError, setVerificationError] = useState<string | null>(null);
 
   if (!isOpen || !user) return null;
 
-  const isExpert = user.role === 'expert';
+  const isExpert = user.role === 'expert' && isApprovedExpert;
 
   const handleSignOut = async () => {
     await signOut();
@@ -39,8 +43,28 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({ isOpen, onCl
   };
 
   const handleToggleRole = async () => {
+    if (!isApprovedExpert) return;
     const nextRole = isExpert ? 'farmer' : 'expert';
     await selectRole(nextRole);
+  };
+
+  const handleVerifyKey = async () => {
+    if (!accessKey.trim()) return;
+    setIsVerifying(true);
+    setVerificationError(null);
+    try {
+      const res = await verifyAndElevateExpert(accessKey.trim());
+      if (res.success) {
+        setShowVerification(false);
+        setAccessKey('');
+      } else {
+        setVerificationError(res.error || 'Verification failed. ID or passkey is invalid.');
+      }
+    } catch {
+      setVerificationError('An error occurred during verification.');
+    } finally {
+      setIsVerifying(false);
+    }
   };
 
   return (
@@ -171,18 +195,77 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({ isOpen, onCl
               </div>
             )}
 
-            {/* Switch Role Option */}
+            {/* Role Management: Approved Experts vs Standard Users */}
             <div className="pt-1">
-              <button
-                onClick={handleToggleRole}
-                className="w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl border border-[#E0D7C6] bg-white hover:bg-[#F9F6F0] text-xs font-bold text-[#4E342E] transition-all cursor-pointer"
-              >
-                <div className="flex items-center gap-2">
-                  {isExpert ? <Sprout className="w-4 h-4 text-[#2E7D32]" /> : <ShieldCheck className="w-4 h-4 text-[#F57C00]" />}
-                  <span>Switch Role to {isExpert ? 'Field Farmer' : 'Agricultural Expert'}</span>
+              {isApprovedExpert ? (
+                <button
+                  onClick={handleToggleRole}
+                  className="w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl border border-[#E0D7C6] bg-white hover:bg-[#F9F6F0] text-xs font-bold text-[#4E342E] transition-all cursor-pointer"
+                >
+                  <div className="flex items-center gap-2">
+                    {isExpert ? <Sprout className="w-4 h-4 text-[#2E7D32]" /> : <ShieldCheck className="w-4 h-4 text-[#F57C00]" />}
+                    <span>Switch to {isExpert ? 'Field Farmer Workspace' : 'Agronomist Command Terminal'}</span>
+                  </div>
+                  <ArrowRight className="w-4 h-4 text-[#795548]" />
+                </button>
+              ) : (
+                <div>
+                  {!showVerification ? (
+                    <button
+                      onClick={() => setShowVerification(true)}
+                      className="w-full flex items-center justify-between px-3.5 py-2 rounded-xl border border-dashed border-[#E0D7C6] hover:border-[#2E7D32] bg-white hover:bg-[#F9F6F0] text-xs font-semibold text-[#795548] transition-all cursor-pointer"
+                    >
+                      <span className="flex items-center gap-1.5">
+                        <ShieldCheck className="w-3.5 h-3.5 text-[#2E7D32]" />
+                        <span>Accredited Agronomist Verification</span>
+                      </span>
+                      <span className="text-[11px] font-bold text-[#2E7D32]">Verify ID →</span>
+                    </button>
+                  ) : (
+                    <div className="p-3.5 rounded-2xl bg-[#F9F6F0] border border-[#2E7D32]/25 space-y-2.5 animate-fadeIn">
+                      <div className="flex items-center justify-between">
+                        <div className="text-xs font-bold text-[#2E7D32] flex items-center gap-1.5">
+                          <ShieldCheck className="w-4 h-4" />
+                          <span>Enter Approved Agronomist ID</span>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setShowVerification(false);
+                            setVerificationError(null);
+                          }}
+                          className="text-[11px] text-[#795548] hover:text-[#4E342E] cursor-pointer"
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                      <p className="text-[11px] text-[#795548] leading-tight">
+                        Enter your approved institutional ID (e.g. @icar.gov.in) or accreditation passkey.
+                      </p>
+                      <div className="flex gap-2">
+                        <input
+                          type="text"
+                          placeholder="Passkey (e.g. ICAR-EXP-2026)"
+                          value={accessKey}
+                          onChange={(e) => setAccessKey(e.target.value)}
+                          className="flex-1 px-3 py-1.5 text-xs rounded-lg border border-[#E0D7C6] bg-white text-[#4E342E] focus:outline-none focus:ring-1 focus:ring-[#2E7D32]"
+                        />
+                        <button
+                          type="button"
+                          onClick={handleVerifyKey}
+                          disabled={isVerifying || !accessKey.trim()}
+                          className="px-3 py-1.5 bg-[#2E7D32] text-white text-xs font-bold rounded-lg hover:bg-[#1B5E20] transition-colors cursor-pointer disabled:opacity-50"
+                        >
+                          {isVerifying ? 'Checking...' : 'Unlock'}
+                        </button>
+                      </div>
+                      {verificationError && (
+                        <p className="text-[11px] text-[#D32F2F] font-semibold">{verificationError}</p>
+                      )}
+                    </div>
+                  )}
                 </div>
-                <ArrowRight className="w-4 h-4 text-[#795548]" />
-              </button>
+              )}
             </div>
           </div>
 

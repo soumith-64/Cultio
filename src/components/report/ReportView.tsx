@@ -13,7 +13,8 @@ import { DivisionHistoryInsights } from './DivisionHistoryInsights';
 import { DivisionComputerVision } from './DivisionComputerVision';
 import { Button } from '@/components/ui/Button';
 import { useLanguage } from '@/context/LanguageContext';
-import { ArrowLeft, Printer, Share2, Sparkles, CheckCircle2 } from 'lucide-react';
+import { ArrowLeft, Printer, Share2, Sparkles, CheckCircle2, Download, FileCheck2 } from 'lucide-react';
+import { downloadReportAsPdf } from '@/services/reportExport';
 
 interface ReportViewProps {
   initialReport: CropReport;
@@ -25,6 +26,8 @@ export const ReportView: React.FC<ReportViewProps> = ({ initialReport, onBack })
   const [report, setReport] = useState<CropReport>(initialReport);
   const [isEscalating, setIsEscalating] = useState<boolean>(false);
   const [justUpdated, setJustUpdated] = useState<boolean>(false);
+  const [isDownloading, setIsDownloading] = useState<boolean>(false);
+  const [downloadSuccess, setDownloadSuccess] = useState<boolean>(false);
 
   // REAL-TIME FIRESTORE LISTENER
   // Updates automatically when an expert submits a review from another device/browser
@@ -59,6 +62,20 @@ export const ReportView: React.FC<ReportViewProps> = ({ initialReport, onBack })
     }
   };
 
+  const handleDownloadPdf = async () => {
+    setIsDownloading(true);
+    try {
+      await downloadReportAsPdf(report);
+      setDownloadSuccess(true);
+      setTimeout(() => setDownloadSuccess(false), 3500);
+    } catch (err) {
+      console.error('Failed to generate PDF report:', err);
+      window.print();
+    } finally {
+      setIsDownloading(false);
+    }
+  };
+
   const hasExpertReview = Boolean(report.expert_review);
 
   return (
@@ -75,8 +92,20 @@ export const ReportView: React.FC<ReportViewProps> = ({ initialReport, onBack })
         </Button>
 
         <div className="flex items-center gap-2">
+          {/* Download Official Report Button */}
           <Button
-            variant="ghost"
+            variant="primary"
+            size="sm"
+            onClick={handleDownloadPdf}
+            isLoading={isDownloading}
+            leftIcon={downloadSuccess ? <CheckCircle2 className="w-4 h-4 text-[#81C784]" /> : <Download className="w-4 h-4" />}
+            className="font-bold shadow-earth text-xs"
+          >
+            {isDownloading ? 'Compiling PDF...' : downloadSuccess ? 'Downloaded!' : 'Download Report'}
+          </Button>
+
+          <Button
+            variant="secondary"
             size="sm"
             onClick={() => window.print()}
             leftIcon={<Printer className="w-4 h-4" />}
@@ -153,6 +182,38 @@ export const ReportView: React.FC<ReportViewProps> = ({ initialReport, onBack })
       {report.recommendations && (
         <DivisionActionPlan plan={report.recommendations} />
       )}
+
+      {/* PROFESSIONAL DOCUMENT EXPORT CALLOUT */}
+      <div className="bg-gradient-to-r from-[#2E7D32]/10 via-[#F9F6F0] to-[#FFFFFF] border-2 border-[#2E7D32]/25 rounded-3xl p-5 sm:p-6 shadow-earth flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div className="space-y-1">
+          <div className="flex items-center gap-2">
+            <span className="text-[10px] font-extrabold uppercase tracking-wider text-[#2E7D32] bg-[#2E7D32]/15 px-2.5 py-0.5 rounded-full flex items-center gap-1">
+              <FileCheck2 className="w-3 h-3" />
+              Official Agronomic PDF
+            </span>
+            <span className="text-[11px] text-[#795548] font-semibold">ICAR & CIBRC Standard Format</span>
+          </div>
+          <h3 className="text-base sm:text-lg font-bold text-[#4E342E]">
+            Download Full Diagnostic Report
+          </h3>
+          <p className="text-xs text-[#795548] max-w-xl leading-relaxed">
+            Includes high-resolution foliar computer vision metrics, microclimate edaphic tables, pathogen differential assessments, and approved chemical dosages with regulated Pre-Harvest Intervals (PHI).
+          </p>
+        </div>
+
+        <div className="flex-shrink-0">
+          <Button
+            variant="primary"
+            size="md"
+            onClick={handleDownloadPdf}
+            isLoading={isDownloading}
+            leftIcon={downloadSuccess ? <CheckCircle2 className="w-4 h-4 text-[#81C784]" /> : <Download className="w-4 h-4" />}
+            className="font-bold shadow-earth whitespace-nowrap"
+          >
+            {isDownloading ? 'Generating PDF...' : downloadSuccess ? 'Report Downloaded!' : 'Download PDF Report'}
+          </Button>
+        </div>
+      </div>
 
       {/* DIVISION 5: EXPERT ESCALATION */}
       <DivisionEscalation

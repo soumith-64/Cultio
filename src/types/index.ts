@@ -15,6 +15,7 @@ export interface UserProfile {
   specialization?: string;
   licenseNumber?: string;
   institution?: string;
+  isAccreditedExpert?: boolean;
   createdAt: string;
   updatedAt?: string;
 }

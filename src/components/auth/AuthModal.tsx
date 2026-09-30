@@ -102,36 +102,8 @@ export const AuthModal: React.FC<AuthModalProps> = ({ initialRole }) => {
             {mode === 'signin' ? 'Sign in to Cultivo' : 'Create Cultivo Account'}
           </h2>
           <p className="text-xs sm:text-sm text-[#795548] mt-1">
-            {role === 'expert'
-              ? 'Access the Certified Agronomist Terminal to verify field cases.'
-              : 'Access real-time crop disease diagnostics and field intelligence.'}
+            Access real-time crop disease diagnostics, microclimate soil telemetry, and verified field reports.
           </p>
-        </div>
-
-        {/* Role Selector Pill */}
-        <div className="flex bg-[#F9F6F0] p-1 rounded-2xl border border-[#E0D7C6] mb-5">
-          <button
-            type="button"
-            onClick={() => setRole('farmer')}
-            className={`flex-1 py-2 text-xs font-bold rounded-xl transition-all cursor-pointer ${
-              role === 'farmer'
-                ? 'bg-[#2E7D32] text-white shadow-sm'
-                : 'text-[#795548] hover:text-[#4E342E]'
-            }`}
-          >
-            Farmer Portal
-          </button>
-          <button
-            type="button"
-            onClick={() => setRole('expert')}
-            className={`flex-1 py-2 text-xs font-bold rounded-xl transition-all cursor-pointer ${
-              role === 'expert'
-                ? 'bg-[#2E7D32] text-white shadow-sm'
-                : 'text-[#795548] hover:text-[#4E342E]'
-            }`}
-          >
-            Agronomist / Expert
-          </button>
         </div>
 
         {errorMsg && (
@@ -164,7 +136,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ initialRole }) => {
               d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.33 0 3.26 2.64 1.25 6.58l4.03 3.15c.95-2.83 3.6-4.98 6.72-4.98z"
             />
           </svg>
-          <span>Continue with Google ({role === 'expert' ? 'Expert' : 'Farmer'})</span>
+          <span>Continue with Google</span>
         </button>
 
         <div className="relative my-4 flex items-center justify-center">
@@ -292,7 +264,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ initialRole }) => {
         </form>
 
         {/* Toggle Sign In / Sign Up */}
-        <div className="text-center mt-5 text-xs text-[#795548]">
+        <div className="text-center mt-4 text-xs text-[#795548]">
           {mode === 'signin' ? (
             <span>
               Don&apos;t have an account?{' '}
@@ -316,6 +288,22 @@ export const AuthModal: React.FC<AuthModalProps> = ({ initialRole }) => {
               </button>
             </span>
           )}
+        </div>
+
+        {/* Discreet Link for Accredited Agronomists */}
+        <div className="text-center mt-3 pt-2.5 border-t border-[#E0D7C6]/60">
+          <button
+            type="button"
+            onClick={() => setRole((prev) => (prev === 'expert' ? 'farmer' : 'expert'))}
+            className="text-[11px] font-semibold text-[#795548] hover:text-[#2E7D32] transition-colors cursor-pointer inline-flex items-center gap-1"
+          >
+            <ShieldCheck className="w-3.5 h-3.5 text-[#2E7D32]" />
+            <span>
+              {role === 'expert'
+                ? '← Return to standard farmer sign-in'
+                : 'Accredited Agronomist / ICAR Researcher sign-in'}
+            </span>
+          </button>
         </div>
       </div>
     </div>
