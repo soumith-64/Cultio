@@ -156,6 +156,26 @@ export interface HistoricalInsight {
   environmental_recurrence_pattern?: string;
 }
 
+export interface AlternativeCrop {
+  crop_name: string;
+  variety_recommendation: string;
+  suitability_score: number; // e.g. 96 (%)
+  reason_for_area: string;
+  expected_yield: string; // e.g. "25 - 32 tons/hectare"
+  profit_potential: 'Very High' | 'High' | 'Moderate';
+  estimated_profit_per_acre: string; // e.g. "₹95,000 - ₹1,40,000 / acre ($1,150 - $1,700)"
+  growth_duration_days: string; // e.g. "85 - 105 days"
+  water_requirement: 'Low' | 'Moderate' | 'High';
+  market_demand: 'High Demand' | 'Export Grade' | 'Stable Mandi Price';
+  rotation_benefit: string;
+}
+
+export interface AlternativeCropAdvisory {
+  area_summary: string;
+  soil_climate_match_rationale: string;
+  top_profit_crops: AlternativeCrop[];
+}
+
 export interface CropReport {
   id: string;
   farmer_id: string;
@@ -172,6 +192,7 @@ export interface CropReport {
   expert_review?: ExpertReview;
   historical_insight?: HistoricalInsight;
   cv_metrics?: ComputerVisionMetrics;
+  alternative_crops?: AlternativeCropAdvisory;
 }
 
 export type PipelineStepId =

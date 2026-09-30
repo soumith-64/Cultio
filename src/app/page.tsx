@@ -32,6 +32,7 @@ import { getWeatherService } from '@/services/weather';
 import { getSoilService } from '@/services/soil';
 import { getDiagnosticService } from '@/services/gemini';
 import { getRecommendationService } from '@/services/recommendations';
+import { AlternativeCropService } from '@/services/alternativeCrops';
 import { ComputerVisionService } from '@/services/cvAnalysis';
 import { useLanguage } from '@/context/LanguageContext';
 
@@ -319,6 +320,14 @@ function CultivoApp() {
           diagnosis.differential_diagnoses
         );
 
+      // Fast (<5ms) alternative crop suggestions matched to soil, pH, temp, humidity & rotation profit
+      const alternativeCrops = AlternativeCropService.suggestCrops(
+        locationData,
+        soilData,
+        weatherData,
+        diagnosis.plant_type
+      );
+
       // Compute longitudinal suggestions from stored previous analyses (comparing lesion area %)
       const historicalInsight = ReportsService.computeHistoricalInsights(
         diagnosis.plant_type,
@@ -335,9 +344,7 @@ function CultivoApp() {
             ? {
                 ...s,
                 state: 'completed',
-                detail: historicalInsight.has_previous_data
-                  ? `Historical trend analyzed (${historicalInsight.previous_analyses_count} prior scans, ${cvMetrics.lesion_surface_area_percent}% lesion area) with continuity suggestions`
-                  : `${recommendations.ordered_action_plan.length} sequential execution steps synthesized`,
+                detail: `High-yield alternative crops & ${recommendations.ordered_action_plan.length} sequential execution steps synthesized`,
               }
             : s
         )
@@ -369,6 +376,7 @@ function CultivoApp() {
         recommendations,
         historical_insight: historicalInsight,
         cv_metrics: cvMetrics,
+        alternative_crops: alternativeCrops,
       };
 
       await ReportsService.createReport(newReport);

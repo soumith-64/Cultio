@@ -9,11 +9,11 @@
 ![Google Gemini](https://img.shields.io/badge/Google_Gemini-2.5_Flash-8E75C2?style=for-the-badge&logo=google)
 ![Hostinger DB](https://img.shields.io/badge/Hostinger_DB-Persistent_Storage-7A3E9D?style=for-the-badge)
 ![Phone.Email OTP](https://img.shields.io/badge/Phone.Email-Instant_OTP-0288D1?style=for-the-badge)
-![ICAR & CIBRC](https://img.shields.io/badge/Govt_Data-ICAR_%26_CIBRC_Aligned-2E7D32?style=for-the-badge)
+![Release](https://img.shields.io/badge/Release-v1.0.0-2E7D32?style=for-the-badge)
 
-**Real-time AI foliar diagnostics, microclimate soil telemetry, Hostinger server & DB photo storage, live multilingual translation, dual-tab role authentication, certified human agronomist escalation, and publication-grade PDF reporting.**
+**Real-time AI foliar diagnostics, microclimate soil telemetry, Hostinger server & DB photo storage, high-yield & high-profit alternative crop advisory, live multilingual translation, dual-tab role authentication, certified human agronomist escalation, and publication-grade PDF reporting.**
 
-[Live Production Web App](https://cultio.wwislib.com) • [Quick Evaluator Login](#-sample-expert-login-details-for-evaluators) • [Hostinger DB & Storage](#-hostinger-database--photo-storage-architecture) • [Architecture Guide](#-system-architecture--workflow)
+[Live Production Web App](https://cultio.wwislib.com) • [Quick Evaluator Login](#-sample-expert-login-details-for-evaluators) • [Alternative Crops & Profit Engine](#5--area-optimized-high-yield--high-profit-alternative-crops-engine) • [Hostinger DB & Storage](#-hostinger-database--photo-storage-architecture)
 
 </div>
 
@@ -130,23 +130,30 @@ Cultio runs on a dedicated Hostinger production environment (`cultio.wwislib.com
 - **Color Distribution Breakdown**: Categorizes foliage pixels into Healthy Green, Chlorotic Yellow, and Necrotic Brown.
 - **Lesion Cluster Counter**: Detects discrete pathogen infection foci across the leaf blade.
 
-### 5. 🏛️ Official Government Guidelines (ICAR & CIBRC Integration)
+### 5. 🌾 Area-Optimized High-Yield & High-Profit Alternative Crops Engine
+- **Sub-5ms Rapid Agronomic Match**: Instantly evaluates live field conditions—soil texture, soil pH, ambient temperature, humidity, and geographic zone.
+- **Economic Profit & Yield Maximization**: Recommends highest-margin crops with estimated net profit per acre (e.g. `₹1,40,000 - ₹2,10,000 / acre`), expected yield per acre/hectare, and specific high-performing cultivars.
+- **Pathogen-Break Rotation**: Automatically detects the current infected crop family (e.g., Solanaceae like Tomato/Potato/Chilli) and suggests rotation crops from non-host botanical families (e.g., Fabaceae/Legumes or Brassicaceae) to starve soil-borne fungal spores (*Fusarium*, *Alternaria*, *Phytophthora*) while fixing atmospheric nitrogen naturally.
+- **Multi-Factor Agronomic Scores**: Displays precise suitability match percentages (e.g. `96% Area Match`), water requirements, growth duration cycles, and market demand tags (Export Grade, High Demand).
+- **Embedded in Web & PDF Reports**: Displayed interactively in the web application and compiled directly into the downloadable official publication-grade PDF report.
+
+### 6. 🏛️ Official Government Guidelines (ICAR & CIBRC Integration)
 - **Verified Research Backing**: Cross-references every diagnosis with official packages of practices from the **Indian Council of Agricultural Research (ICAR)**.
 - **Regulated Chemistry & CIBRC Formulations**: Displays legally approved chemical active ingredients (e.g., Mancozeb 75% WP, Chlorothalonil 75% WP, Azoxystrobin 23% SC) with precise water dilution ratios.
 - **Pre-Harvest Intervals (PHI)**: Enforces mandatory harvest safety waiting periods (in days) to prevent toxic chemical residues in market produce.
 - **Direct Portal Links**: Deep links to verified portals including [Kisan Suvidha (Government of India)](https://kisansuvidha.gov.in).
 
-### 6. 📱 Phone.Email Instant Mobile OTP Sign In
+### 7. 📱 Phone.Email Instant Mobile OTP Sign In
 - Integrated with the **Phone.Email** lightweight instant sign-in button using Client ID `13311688567845248231`.
 - Authenticates users via real SMS or WhatsApp OTP without requiring passwords or complex email verification steps.
 - Backend verified through `/api/auth/phone-verify` route for production security.
 
-### 7. 🔒 Accredited Agronomist Portal (`/expert`)
+### 8. 🔒 Accredited Agronomist Portal (`/expert`)
 - **Protected Terminal Gate**: Only approved institutional IDs (`@icar.gov.in`, `@gov.in`, `expert@cultivo.ai`) or valid passkeys (`ICAR-EXP-2026`) can unlock the terminal.
 - **Live Incoming Case Queue**: Real-time Hostinger DB synchronization of escalated field cases awaiting clinical review.
 - **Structured Agronomist Prescriptions**: Certified agronomists issue binding clinical prescriptions that automatically pin **above** AI recommendations on the farmer's device.
 
-### 8. 📄 Publication-Grade PDF Report Export
+### 9. 📄 Publication-Grade PDF Report Export
 - **One-Click Instant Download**: Generates high-resolution, vector-crisp PDF reports directly in the browser via `jsPDF`.
 - **Comprehensive Document Layout**:
   - Official Cultio Forest Green header & status badge
@@ -270,6 +277,7 @@ Cultio/
 │   │   │   ├── DivisionEscalation.tsx     # Division 5: Human expert escalation
 │   │   │   ├── DivisionComputerVision.tsx # Lesion area % & canopy density
 │   │   │   ├── DivisionHistoryInsights.tsx# Longitudinal trend comparisons
+│   │   │   ├── DivisionAlternativeCrops.tsx # Area-optimized high-profit alternative crops
 │   │   │   ├── ExpertNoteCard.tsx         # Pinned human agronomist review
 │   │   │   └── ReportView.tsx             # Live report viewer, translator & PDF download
 │   │   └── ui/                            # Atomic design buttons, cards, badges
@@ -282,6 +290,7 @@ Cultio/
 │   ├── lib/
 │   │   └── hostingerDb.ts      # Hostinger persistent database engine (Photos & Reports)
 │   ├── services/
+│   │   ├── alternativeCrops.ts # Fast alternative crop & profit maximization engine
 │   │   ├── recommendations.ts  # ICAR/CIBRC rule engine & action plans
 │   │   ├── reportExport.ts     # Publication-grade vector PDF generator (jsPDF)
 │   │   ├── reports.ts          # Hostinger DB API sync & 1-sec real-time telemetry

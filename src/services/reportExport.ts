@@ -425,6 +425,45 @@ export async function downloadReportAsPdf(report: CropReport): Promise<void> {
     y += 24;
   }
 
+  // ================= ALTERNATIVE HIGH-PROFIT CROPS =================
+  if (report.alternative_crops?.top_profit_crops && report.alternative_crops.top_profit_crops.length > 0) {
+    checkPageBreak(35);
+
+    doc.setFillColor(232, 245, 233); // Light Green #E8F5E9
+    doc.setDrawColor(200, 230, 201);
+    doc.roundedRect(margin, y, contentWidth, 8, 1.5, 1.5, 'FD');
+
+    doc.setFontSize(8.5);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(27, 94, 32); // #1B5E20
+    doc.text('AREA-OPTIMIZED HIGH-PROFIT & HIGH-YIELD ALTERNATIVE CROPS', margin + 4, y + 5.5);
+    y += 11;
+
+    report.alternative_crops.top_profit_crops.forEach((crop, idx) => {
+      checkPageBreak(18);
+      doc.setFillColor(255, 255, 255);
+      doc.setDrawColor(224, 215, 198);
+      doc.roundedRect(margin, y, contentWidth, 14, 1.5, 1.5, 'FD');
+
+      doc.setFontSize(8);
+      doc.setFont('helvetica', 'bold');
+      doc.setTextColor(46, 125, 50);
+      doc.text(`#${idx + 1} ${crop.crop_name} (${crop.variety_recommendation}) — ${crop.suitability_score}% Match`, margin + 3, y + 4.5);
+
+      doc.setFontSize(7.5);
+      doc.setFont('helvetica', 'normal');
+      doc.setTextColor(78, 52, 46);
+      doc.text(`Est. Net Profit: ${crop.estimated_profit_per_acre}   •   Expected Yield: ${crop.expected_yield}`, margin + 3, y + 8.5);
+
+      doc.setTextColor(121, 85, 72);
+      doc.text(`Cycle: ${crop.growth_duration_days}   •   Water: ${crop.water_requirement}   •   Rotation: ${crop.rotation_benefit.slice(0, 80)}...`, margin + 3, y + 12);
+
+      y += 16;
+    });
+
+    y += 2;
+  }
+
   // ================= FOOTER & VERIFICATION STAMP =================
   checkPageBreak(20);
   doc.setDrawColor(224, 215, 198);

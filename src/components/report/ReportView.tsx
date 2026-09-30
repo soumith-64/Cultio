@@ -11,6 +11,8 @@ import { DivisionEscalation } from './DivisionEscalation';
 import { ExpertNoteCard } from './ExpertNoteCard';
 import { DivisionHistoryInsights } from './DivisionHistoryInsights';
 import { DivisionComputerVision } from './DivisionComputerVision';
+import { DivisionAlternativeCrops } from './DivisionAlternativeCrops';
+import { AlternativeCropService } from '@/services/alternativeCrops';
 import { Button } from '@/components/ui/Button';
 import { useLanguage } from '@/context/LanguageContext';
 import { ArrowLeft, Printer, Share2, Sparkles, CheckCircle2, Download, FileCheck2 } from 'lucide-react';
@@ -331,6 +333,21 @@ export const ReportView: React.FC<ReportViewProps> = ({ initialReport, onBack })
       {/* DIVISION 4: ACTION PLAN */}
       {effectiveRecommendations && (
         <DivisionActionPlan plan={effectiveRecommendations} />
+      )}
+
+      {/* HIGH-PROFIT & HIGH-YIELD ALTERNATIVE CROPS FOR THIS AREA */}
+      {(report.alternative_crops || (report.location && report.environment)) && (
+        <DivisionAlternativeCrops
+          advisory={
+            report.alternative_crops ||
+            AlternativeCropService.suggestCrops(
+              report.location,
+              report.environment.soil,
+              report.environment.weather,
+              report.diagnosis?.plant_type
+            )
+          }
+        />
       )}
 
       {/* PROFESSIONAL DOCUMENT EXPORT CALLOUT */}
