@@ -450,9 +450,5 @@ function CultivoApp() {
 }
 
 export default function Home() {
-  return (
-    <AuthProvider>
-      <CultivoApp />
-    </AuthProvider>
-  );
+  return <CultivoApp />;
 }

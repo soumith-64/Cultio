@@ -12,6 +12,9 @@ export interface UserProfile {
   photoURL: string | null;
   phoneNumber: string | null;
   role: UserRole;
+  specialization?: string;
+  licenseNumber?: string;
+  institution?: string;
   createdAt: string;
   updatedAt?: string;
 }

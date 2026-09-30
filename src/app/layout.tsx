@@ -30,6 +30,8 @@ export const viewport: Viewport = {
   maximumScale: 5,
 };
 
+import { ClientProviders } from "@/components/providers/ClientProviders";
+
 export default function RootLayout({
   children,
 }: {
@@ -42,7 +44,9 @@ export default function RootLayout({
         <meta name="apple-mobile-web-app-status-bar-style" content="default" />
       </head>
       <body className="min-h-full flex flex-col bg-[#F9F6F0] text-[#4E342E] selection:bg-[#81C784]/30">
-        {children}
+        <ClientProviders>
+          {children}
+        </ClientProviders>
       </body>
     </html>
   );

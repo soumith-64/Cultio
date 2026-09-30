@@ -3,6 +3,7 @@
 import React from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { isFirebaseConfigured } from '@/config/firebase';
+import Link from 'next/link';
 import { Sprout, ShieldCheck, User, LogOut, ArrowLeftRight, Cloud } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 
@@ -13,12 +14,6 @@ interface NavbarProps {
 
 export const Navbar: React.FC<NavbarProps> = ({ currentView, onNavigate }) => {
   const { user, isAuthenticated, signOut, setShowAuthModal, selectRole } = useAuth();
-
-  const handleRoleToggle = () => {
-    const nextRole = user?.role === 'expert' ? 'farmer' : 'expert';
-    selectRole(nextRole);
-    onNavigate(nextRole);
-  };
 
   return (
     <header className="sticky top-0 z-40 bg-[#FFFFFF]/95 backdrop-blur-md border-b border-[#E0D7C6] transition-all">
@@ -46,43 +41,34 @@ export const Navbar: React.FC<NavbarProps> = ({ currentView, onNavigate }) => {
           </div>
         </button>
 
-        {/* Center / Role Toggle Switcher */}
+        {/* Center / Role Navigation */}
         <div className="flex items-center gap-2">
-          {isAuthenticated && (
-            <div className="flex items-center bg-[#F9F6F0] p-1 rounded-xl border border-[#E0D7C6]">
-              <button
-                onClick={() => {
-                  selectRole('farmer');
-                  onNavigate('farmer');
-                }}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
-                  user?.role === 'farmer' && currentView === 'farmer'
-                    ? 'bg-[#2E7D32] text-white shadow-sm'
-                    : 'text-[#4E342E] hover:bg-[#EFE8DC]'
-                }`}
-                title="Switch to Farmer Diagnostic View"
-              >
-                <Sprout className="w-3.5 h-3.5" />
-                <span className="hidden xs:inline">Farmer</span>
-              </button>
+          <div className="flex items-center bg-[#F9F6F0] p-1 rounded-xl border border-[#E0D7C6]">
+            <button
+              onClick={() => {
+                selectRole('farmer');
+                onNavigate('farmer');
+              }}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                currentView === 'farmer' || user?.role === 'farmer'
+                  ? 'bg-[#2E7D32] text-white shadow-sm'
+                  : 'text-[#4E342E] hover:bg-[#EFE8DC]'
+              }`}
+              title="Farmer Diagnostic Workspace"
+            >
+              <Sprout className="w-3.5 h-3.5" />
+              <span className="hidden xs:inline">Farmer Portal</span>
+            </button>
 
-              <button
-                onClick={() => {
-                  selectRole('expert');
-                  onNavigate('expert');
-                }}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
-                  user?.role === 'expert' || currentView === 'expert'
-                    ? 'bg-[#2E7D32] text-white shadow-sm'
-                    : 'text-[#4E342E] hover:bg-[#EFE8DC]'
-                }`}
-                title="Switch to Agricultural Expert Portal"
-              >
-                <ShieldCheck className="w-3.5 h-3.5" />
-                <span className="hidden xs:inline">Expert Agronomist</span>
-              </button>
-            </div>
-          )}
+            <Link
+              href="/expert"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold text-[#4E342E] hover:bg-[#EFE8DC] transition-all cursor-pointer"
+              title="Open Dedicated Expert Agronomist Portal"
+            >
+              <ShieldCheck className="w-3.5 h-3.5 text-[#2E7D32]" />
+              <span className="hidden xs:inline">Expert Portal</span>
+            </Link>
+          </div>
 
           {/* Sync Status Pill */}
           <div
