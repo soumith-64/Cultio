@@ -7,13 +7,13 @@
 ![TypeScript](https://img.shields.io/badge/TypeScript-5.0-blue?style=for-the-badge&logo=typescript)
 ![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-v4-38B2AC?style=for-the-badge&logo=tailwind-css)
 ![Google Gemini](https://img.shields.io/badge/Google_Gemini-2.5_Flash-8E75C2?style=for-the-badge&logo=google)
-![Firebase](https://img.shields.io/badge/Firebase-Firestore_&_Auth-FFCA28?style=for-the-badge&logo=firebase)
+![Hostinger DB](https://img.shields.io/badge/Hostinger_DB-Persistent_Storage-7A3E9D?style=for-the-badge)
 ![Phone.Email OTP](https://img.shields.io/badge/Phone.Email-Instant_OTP-0288D1?style=for-the-badge)
 ![ICAR & CIBRC](https://img.shields.io/badge/Govt_Data-ICAR_%26_CIBRC_Aligned-2E7D32?style=for-the-badge)
 
-**Real-time AI foliar diagnostics, microclimate soil telemetry, live multilingual translation, dual-tab role authentication, certified human agronomist escalation, and publication-grade PDF reporting.**
+**Real-time AI foliar diagnostics, microclimate soil telemetry, Hostinger server & DB photo storage, live multilingual translation, dual-tab role authentication, certified human agronomist escalation, and publication-grade PDF reporting.**
 
-[Live Production Web App](https://cultio.wwislib.com) • [Quick Evaluator Login](#-sample-expert-login-details-for-evaluators) • [Architecture Guide](#-system-architecture--workflow)
+[Live Production Web App](https://cultio.wwislib.com) • [Quick Evaluator Login](#-sample-expert-login-details-for-evaluators) • [Hostinger DB & Storage](#-hostinger-database--photo-storage-architecture) • [Architecture Guide](#-system-architecture--workflow)
 
 </div>
 
@@ -23,7 +23,7 @@
 
 **Cultio** is an enterprise-grade agricultural intelligence platform built for smallholders, commercial growers, and certified agronomists. It addresses the critical disconnect between laboratory-grade computer vision models and practical field execution in rural conditions.
 
-By fusing **multimodal visual diagnostic AI (Google Gemini 2.5 Flash)** with **live hyper-local microclimate weather**, **ISRIC SoilGrids edaphic profiles**, **Phone.Email mobile OTP verification**, and **official government advisory registries (ICAR & CIBRC)**, Cultio delivers decisive, actionable, and legally compliant crop protection guidance in under three seconds.
+By fusing **multimodal visual diagnostic AI (Google Gemini 2.5 Flash)** with **live hyper-local microclimate weather**, **ISRIC SoilGrids edaphic profiles**, **dedicated Hostinger server database & photo storage**, **Phone.Email mobile OTP verification**, and **official government advisory registries (ICAR & CIBRC)**, Cultio delivers decisive, actionable, and legally compliant crop protection guidance in under three seconds.
 
 ---
 
@@ -49,10 +49,30 @@ For hackathon judges and evaluators reviewing the **Agricultural Expert Terminal
 > **"No prestored dummy data — pure live analysis. Previous analysis data is persisted to compute longitudinal field trajectories and actionable recurrence alerts."**
 
 1. **Pure Live Ingestion**: Cultio never serves pre-cached or synthetic demo reports. All diagnostics compute strictly in real-time from a live device camera specimen capture or user photo upload combined with live environmental telemetry.
-2. **Longitudinal History & Trend Intelligence**: Every completed scan is stored in the cultivator's persistent field record. Subsequent scans automatically compute longitudinal metrics:
+2. **Longitudinal History & Trend Intelligence**: Every completed scan is stored in the cultivator's persistent field record in the **Hostinger Database**. Subsequent scans automatically compute longitudinal metrics:
    - **Severity Trajectory**: Evaluates whether infection is *improving*, *deteriorating*, or *stable* relative to prior scans in the sector.
    - **Pathogen Recurrence Warnings**: Flags persistent soil-borne or airborne reinfections (e.g. *Alternaria solani*, *Phytophthora infestans*).
    - **Treatment Continuity Guidance**: Adjusts fungicide or organic spray recommendations based on previously applied modes of action to prevent fungal resistance.
+
+---
+
+## 🗄️ Hostinger Database & Photo Storage Architecture
+
+Cultio runs on a dedicated Hostinger production environment (`cultio.wwislib.com`) with **zero reliance on Firebase Storage** for photos.
+
+### 1. Photo Storage on Hostinger Server
+- **No Third-Party Cloud Buckets**: Specimen photographs are never sent to Firebase Storage. All photos are directly uploaded to Hostinger server storage via `/api/upload`.
+- **High-Performance Image Streaming**: Images are streamed directly with immutable cache-control headers through `/uploads/[filename]`, providing instant, low-latency image previews in rural bandwidth conditions.
+- **Offscreen Compression**: Before transmission, foliar images are resized and compressed on an offscreen HTML5 canvas to ~200-400KB, reducing upload times over 2G/3G rural networks.
+
+### 2. Hostinger Persistent Database (`src/lib/hostingerDb.ts`)
+- **Photos Collection**: Indexes every uploaded specimen with unique photo IDs, file names, download paths, user IDs, sizes, and timestamps.
+- **Reports Collection**: Stores complete field diagnostics, AI analyses, GPS coordinates, weather conditions, soil data, and agronomist reviews.
+- **Server Persistence**: Atomic write-locking engine persists state safely on the Hostinger server disk (`data/hostinger_db.json`), surviving server reboots without database corruption.
+
+### 3. Continuous 1-Second Telemetry Sync
+- **Real-Time Heartbeat**: The frontend establishes a high-frequency 1-second continuous telemetry sync with Hostinger DB (`/api/reports`).
+- **Instant Escalation & Prescriptions**: When an agronomist reviews a case or a farmer scans a crop, updates reflect across all connected terminals within 1 second.
 
 ---
 
@@ -69,7 +89,7 @@ For hackathon judges and evaluators reviewing the **Agricultural Expert Terminal
   - Displays sample evaluator login credentials directly on the card with 1-click autofill.
   - Collects agronomic specialization, license numbers, and research station affiliations.
 - **Strict Role Gatekeeping (No Farmer Role Elevation in Web)**:
-  - In compliance with institutional agricultural data governance, once authenticated as a **Field Cultivator**, **all role-switching options, passkey elevation inputs, and expert links are strictly removed from the web app**.
+  - Once authenticated as a **Field Cultivator**, **all role-switching options, passkey elevation inputs, and expert review buttons are strictly locked out**.
   - Farmers cannot switch to expert or view agronomist terminals while logged in as a cultivator.
   - If a logged-in farmer visits `/expert`, an explicit access restriction screen is presented with a **"Sign Out to Switch Account"** option.
 
@@ -98,8 +118,8 @@ For hackathon judges and evaluators reviewing the **Agricultural Expert Terminal
   - Spanish (`es` — Español)
 
 ### 3. 🔬 Decisive Multimodal AI Diagnostics
-- **Gemini 2.5 Flash Engine**: Leverages Google's latest multimodal vision architecture via the official `@google/genai` SDK for sub-second foliar feature extraction.
-- **Decisive Crop Identification**: Accurately classifies crop species across major staples and cash crops: Tomato, Potato, Chilli, Maize, Rice, Wheat, Cotton, Sugarcane, Citrus, and Pulses.
+- **Gemini 2.5 Flash Engine**: Leverages Google's latest multimodal vision architecture via the official `@google/genai` SDK with intelligent cascade fallbacks for sub-second foliar feature extraction.
+- **Decisive Crop Identification**: Accurately classifies crop species across major staples and cash crops: Tomato, Potato, Chilli, Maize, Rice, Wheat, Cotton, Sugarcane, Citrus, and Pulses without hardcoded generic responses.
 - **Analytical Confidence & Explanations**: Eliminates unhelpful "low confidence" cop-outs. The model provides an analytical confidence rating (High, Moderate, Low) along with an explicit botanical explanation detailing visible morphological signs.
 - **Differential Diagnoses**: Evaluates alternative candidate pathologies to assist human agronomists during clinical escalation.
 - **Root-Cause Environmental Correlation**: Cross-references ambient relative humidity, soil pH, and recent rainfall to determine whether microclimate conditions catalyzed the pathogen outbreak.
@@ -123,7 +143,7 @@ For hackathon judges and evaluators reviewing the **Agricultural Expert Terminal
 
 ### 7. 🔒 Accredited Agronomist Portal (`/expert`)
 - **Protected Terminal Gate**: Only approved institutional IDs (`@icar.gov.in`, `@gov.in`, `expert@cultivo.ai`) or valid passkeys (`ICAR-EXP-2026`) can unlock the terminal.
-- **Live Incoming Case Queue**: Real-time Firestore synchronization of escalated field cases awaiting clinical review.
+- **Live Incoming Case Queue**: Real-time Hostinger DB synchronization of escalated field cases awaiting clinical review.
 - **Structured Agronomist Prescriptions**: Certified agronomists issue binding clinical prescriptions that automatically pin **above** AI recommendations on the farmer's device.
 
 ### 8. 📄 Publication-Grade PDF Report Export
@@ -172,27 +192,30 @@ flowchart TD
         B --> D["🌤️ Weather Telemetry (OpenWeather)"]
         B --> E["🌱 Soil Horizon (ISRIC SoilGrids)"]
         B --> F["🗣️ Farmer Notes (Voice / Text)"]
+        B --> U["💾 /api/upload (Hostinger DB Photo Storage)"]
     end
     
     F --> G["🌐 /api/translate (Gemini Live Translation)"]
     
-    C & D & E & G --> H["🧠 /api/diagnose (Gemini 2.5 Flash Engine)"]
+    C & D & E & G & U --> H["🧠 /api/diagnose (Gemini 2.5 Flash Engine)"]
     
     H --> I["📊 Foliar Computer Vision Segmentation"]
     H --> J["🏛️ ICAR & CIBRC Standard Cross-Reference"]
-    H --> K["📜 Longitudinal Field History Match"]
+    H --> K["📜 Longitudinal Field History Match (Hostinger DB)"]
     
     I & J & K --> L["📑 Structured 5-Division Diagnostic Report"]
+    
+    L --> S["💾 /api/reports (Persist to Hostinger DB)"]
     
     L --> M{"Farmer Action"}
     M -->|Translate| T["🌐 Live Translate Entire Report (8 Languages)"]
     M -->|Download| N["📄 One-Click PDF Report (jsPDF)"]
     M -->|Escalate| O["🚨 Request Certified Agronomist Review"]
     
-    O --> P["☁️ Firebase Firestore / Real-Time Queue"]
+    O --> P["⚡ Hostinger DB 1-Second Sync Queue"]
     P --> Q["👨‍🌾 Accredited Terminal (/expert)"]
     Q --> R["✍️ Binding Clinical Prescription"]
-    R -->|Live onSnapshot| L
+    R -->|Live 1-Sec Sync| L
 ```
 
 ---
@@ -201,7 +224,11 @@ flowchart TD
 
 ```
 Cultio/
-├── public/                     # Static assets, logos, and PWA icons
+├── data/                       # Hostinger persistent database directory
+│   ├── .gitkeep
+│   └── hostinger_db.json       # Persistent photos and reports store
+├── public/                     # Static assets, logos, and uploaded files
+│   ├── uploads/                # Hostinger server photo storage
 │   ├── logo.png                # Cultio corporate emblem
 │   └── favicon.ico
 ├── src/
@@ -210,9 +237,11 @@ Cultio/
 │   │   │   ├── auth/
 │   │   │   │   └── phone-verify/ # Phone.Email backend verification
 │   │   │   ├── diagnose/       # Gemini 2.5 Flash multimodal diagnostic endpoint
+│   │   │   ├── reports/        # Hostinger DB reports CRUD & sync endpoint
 │   │   │   ├── translate/      # Real-time full report & text translation endpoint
-│   │   │   └── upload/         # Specimen upload handling
+│   │   │   └── upload/         # Hostinger server & DB photo upload API
 │   │   ├── expert/             # Dedicated Accredited Agronomist Portal page
+│   │   ├── uploads/[filename]/ # Fast streaming image route with caching
 │   │   ├── globals.css         # Tailwind v4 theme tokens & Earthical variables
 │   │   ├── layout.tsx          # Root HTML metadata & font definitions
 │   │   └── page.tsx            # Main application router (Landing / Diagnostic / Camera)
@@ -220,7 +249,7 @@ Cultio/
 │   │   ├── auth/
 │   │   │   ├── AuthModal.tsx          # Dual-tab Farmer & Expert authentication modal
 │   │   │   ├── PhoneEmailButton.tsx   # Phone.Email instant mobile OTP button
-│   │   │   ├── PrivacyConsentModal.tsx # Hardware permissions & privacy policy
+│   │   │   ├── PrivacyConsentModal.tsx # Hardware permissions & Hostinger DB policy
 │   │   │   ├── RoleModal.tsx          # Workspace setup & passkey gateway
 │   │   │   └── UserProfileModal.tsx   # User profile modal (strictly isolated for farmers)
 │   │   ├── camera/
@@ -232,7 +261,7 @@ Cultio/
 │   │   ├── layout/
 │   │   │   ├── LanguageSelector.tsx   # 8-language in-app dropdown
 │   │   │   ├── MobileBottomNav.tsx    # Responsive bottom navigation (farmer-isolated)
-│   │   │   └── Navbar.tsx             # Responsive header with role gatekeeping
+│   │   │   └── Navbar.tsx             # Responsive header with Hostinger DB badge
 │   │   ├── report/
 │   │   │   ├── DivisionIdentity.tsx       # Division 1: Crop identity & status
 │   │   │   ├── DivisionEnvironment.tsx    # Division 2: Soil & weather tables
@@ -246,20 +275,21 @@ Cultio/
 │   │   └── ui/                            # Atomic design buttons, cards, badges
 │   ├── config/
 │   │   ├── experts.ts          # Approved agronomist whitelist & passkey validator
-│   │   └── firebase.ts         # Firebase initialization & client configuration
+│   │   └── firebase.ts         # Firebase Auth configuration (Storage removed)
 │   ├── context/
 │   │   ├── AuthContext.tsx     # Session management & expert accreditation logic
 │   │   └── LanguageContext.tsx # 8-language in-app dictionary & live report translation
+│   ├── lib/
+│   │   └── hostingerDb.ts      # Hostinger persistent database engine (Photos & Reports)
 │   ├── services/
 │   │   ├── recommendations.ts  # ICAR/CIBRC rule engine & action plans
 │   │   ├── reportExport.ts     # Publication-grade vector PDF generator (jsPDF)
-│   │   ├── reports.ts          # Firestore & local persistent storage engine
+│   │   ├── reports.ts          # Hostinger DB API sync & 1-sec real-time telemetry
 │   │   ├── soil.ts             # ISRIC SoilGrids client & edaphic parser
+│   │   ├── storage.ts          # Hostinger server & DB photo storage service
 │   │   └── weather.ts          # OpenWeather Agro client
 │   └── types/
 │       └── index.ts            # Central TypeScript domain interfaces
-├── firestore.rules             # Production Firebase security rules
-├── storage.rules               # Production Cloud Storage security rules
 ├── package.json                # Project dependencies & build scripts
 └── README.md                   # Complete architectural documentation
 ```
@@ -300,16 +330,15 @@ OPENWEATHER_API_KEY=your_openweather_api_key_here
 # Optional: ISRIC SoilGrids REST Integration (defaults to intelligent local fallback)
 NEXT_PUBLIC_USE_ISRIC=false
 
-# Firebase Configuration (Required for cloud synchronization)
+# Firebase Auth Configuration (Photos & reports are stored directly on Hostinger DB)
 NEXT_PUBLIC_FIREBASE_API_KEY=your_firebase_api_key
 NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=your_project.firebaseapp.com
 NEXT_PUBLIC_FIREBASE_PROJECT_ID=your_project_id
-NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=your_project.appspot.com
 NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=your_sender_id
 NEXT_PUBLIC_FIREBASE_APP_ID=your_app_id
 ```
 
-> **Zero-Config Prototype Mode**: If Firebase or weather credentials are left empty, Cultio seamlessly activates its **Local Reactive Engine**, allowing complete end-to-end evaluation with live local state!
+> **Zero-Config Hostinger DB Storage**: Photos and diagnostic reports are persisted automatically in `data/hostinger_db.json` and `public/uploads` on your Hostinger server with zero third-party storage fees!
 
 ### 3. Run Development Server
 
