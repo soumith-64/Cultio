@@ -265,6 +265,7 @@ function CultivoApp() {
       const diagnosis: Diagnosis = await diagnosticService.diagnoseCrop({
         image_url: storedImageUrl,
         image_base64: base64,
+        mime_type: file?.type || 'image/jpeg',
         farmer_notes: farmerNotes,
         preferred_language: language,
         weather: weatherData,
