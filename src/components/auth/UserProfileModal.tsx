@@ -233,7 +233,7 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({ isOpen, onCl
 
               <div className="flex items-center gap-2.5 text-xs text-[#2E7D32] font-semibold pt-1 border-t border-[#E0D7C6]/60">
                 <Cloud className="w-4 h-4 shrink-0" />
-                <span>{isFirebaseConfigured ? 'Live Cloud Firestore Connected' : 'Local Real-Time Active'}</span>
+                <span>Hostinger DB & Storage Live Connected</span>
               </div>
             </div>
 

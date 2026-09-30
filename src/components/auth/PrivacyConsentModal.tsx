@@ -79,7 +79,7 @@ export const PrivacyConsentModal: React.FC = () => {
                 <span>Where Images are Stored</span>
               </div>
               <p className="text-xs text-[#795548] leading-relaxed">
-                Photographs are safely encrypted in your personal Firebase Storage bucket. They are never published publicly or shared with commercial advertisers.
+                Photographs are safely encrypted and stored on your secure Hostinger server database. They are never published publicly or shared with commercial advertisers.
               </p>
             </div>
 

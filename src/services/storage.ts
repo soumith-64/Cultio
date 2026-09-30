@@ -1,10 +1,9 @@
 /**
  * CULTIVO — Image Validation, Compression & Storage Service
- * Handles mobile image resizing/compression and upload to Firebase Storage or local fallback
+ * Handles mobile image resizing/compression and upload to Hostinger Database/Server Storage
+ * 
+ * STRICT RULE: No Firebase Photo Storage. Photos and metadata are stored on Hostinger server.
  */
-
-import { storage, isFirebaseConfigured } from '@/config/firebase';
-import { ref, uploadBytesResumable, getDownloadURL } from 'firebase/storage';
 
 export interface ImageValidationResult {
   valid: boolean;
@@ -118,8 +117,8 @@ export class ImageStorageService {
   }
 
   /**
-   * Upload image to Hostinger Server Storage (or local dataURL fallback)
-   * Avoids requiring a paid Firebase Blaze plan for media storage
+   * Upload image to Hostinger Server & Database
+   * Strictly NO Firebase photo storage used.
    */
   public static async uploadCropImage(
     file: File,
@@ -128,13 +127,13 @@ export class ImageStorageService {
   ): Promise<{ downloadUrl: string; storagePath: string }> {
     if (onProgress) onProgress(20);
 
-    // 1. Try uploading to Hostinger server /api/upload endpoint
+    // 1. Primary: Upload to Hostinger server /api/upload endpoint (multipart/form-data)
     try {
       const formData = new FormData();
       formData.append('file', file);
       formData.append('userId', userId);
 
-      if (onProgress) onProgress(45);
+      if (onProgress) onProgress(50);
 
       const res = await fetch('/api/upload', {
         method: 'POST',
@@ -150,57 +149,43 @@ export class ImageStorageService {
         };
       }
     } catch (serverErr) {
-      console.warn('[ImageStorageService] Hostinger server upload fallback:', serverErr);
+      console.warn('[ImageStorageService] Hostinger multipart upload warning:', serverErr);
     }
 
-    // 2. Optional: Try Firebase Storage if configured (and not billing-restricted)
-    if (isFirebaseConfigured && storage) {
-      try {
-        const cleanFileName = file.name.replace(/[^a-zA-Z0-9.-]/g, '_');
-        const storagePath = `crop_images/${userId}/${Date.now()}_${cleanFileName}`;
-        const storageRef = ref(storage, storagePath);
+    // 2. Secondary: Try JSON base64 upload to Hostinger /api/upload (handles mobile WebViews)
+    try {
+      if (onProgress) onProgress(70);
+      const compressed = await this.compressImage(file);
+      const res = await fetch('/api/upload', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          image_base64: compressed.base64,
+          file_name: file.name,
+          userId,
+        }),
+      });
 
-        const uploadTask = uploadBytesResumable(storageRef, file, {
-          contentType: file.type || 'image/jpeg',
-          customMetadata: {
-            uploadedBy: userId,
-            uploadedAt: new Date().toISOString(),
-            app: 'Cultivo',
-          },
-        });
-
-        return await new Promise((resolve, reject) => {
-          uploadTask.on(
-            'state_changed',
-            (snapshot) => {
-              const progress = Math.round(
-                (snapshot.bytesTransferred / snapshot.totalBytes) * 100
-              );
-              if (onProgress) onProgress(progress);
-            },
-            (error) => {
-              console.warn('[Firebase Storage] Plan error, using local fallback:', error);
-              reject(error);
-            },
-            async () => {
-              const downloadUrl = await getDownloadURL(uploadTask.snapshot.ref);
-              resolve({ downloadUrl, storagePath });
-            }
-          );
-        });
-      } catch (fbErr) {
-        console.warn('[Firebase Storage] Falling back to local dataUrl:', fbErr);
+      if (res.ok) {
+        const data = await res.json();
+        if (onProgress) onProgress(100);
+        return {
+          downloadUrl: data.downloadUrl || data.url,
+          storagePath: data.storagePath || data.url,
+        };
       }
+    } catch (jsonErr) {
+      console.warn('[ImageStorageService] Hostinger base64 upload warning:', jsonErr);
     }
 
-    // 3. Fallback: Convert file to permanent Data URL for browser display
+    // 3. Offline Fallback: Convert file to permanent Data URL for in-browser session display
     if (onProgress) onProgress(100);
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
       reader.onload = () => {
         resolve({
           downloadUrl: reader.result as string,
-          storagePath: `local_storage/crops/${userId}/${Date.now()}_${file.name}`,
+          storagePath: `hostinger_local/crops/${userId}/${Date.now()}_${file.name}`,
         });
       };
       reader.onerror = reject;

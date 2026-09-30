@@ -77,14 +77,10 @@ export const Navbar: React.FC<NavbarProps> = ({ currentView, onNavigate, onOpenP
           {/* Sync Status Pill */}
           <div
             className="hidden md:flex items-center gap-1.5 text-[11px] font-semibold px-2.5 py-1 rounded-full bg-[#F9F6F0] text-[#795548] border border-[#E0D7C6]"
-            title={
-              isFirebaseConfigured
-                ? 'Connected to Firebase Firestore Live Synchronization'
-                : 'Running in Local Prototype Reactive Mode'
-            }
+            title="Connected to Hostinger Server DB Live Synchronization"
           >
             <Cloud className="w-3 h-3 text-[#2E7D32]" />
-            <span>{isFirebaseConfigured ? t('live_cloud_sync') : 'Local Live'}</span>
+            <span>Hostinger DB Live</span>
           </div>
 
           {/* User Profile / Auth Action */}

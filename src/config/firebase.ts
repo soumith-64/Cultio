@@ -7,7 +7,6 @@
 import { initializeApp, getApps, getApp, FirebaseApp } from 'firebase/app';
 import { getAuth, Auth, GoogleAuthProvider } from 'firebase/auth';
 import { getFirestore, Firestore } from 'firebase/firestore';
-import { getStorage, FirebaseStorage } from 'firebase/storage';
 
 const firebaseConfig = {
   apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
@@ -29,7 +28,8 @@ export const isFirebaseConfigured = Boolean(
 let app: FirebaseApp | null = null;
 let auth: Auth | null = null;
 let db: Firestore | null = null;
-let storage: FirebaseStorage | null = null;
+// Photo storage is strictly managed via Hostinger DB / filesystem (process.env.NEXT_PUBLIC_USE_HOSTINGER_STORAGE)
+const storage = null;
 let googleProvider: GoogleAuthProvider | null = null;
 
 if (typeof window !== 'undefined' && isFirebaseConfigured) {
@@ -37,7 +37,6 @@ if (typeof window !== 'undefined' && isFirebaseConfigured) {
     app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApp();
     auth = getAuth(app);
     db = getFirestore(app);
-    storage = getStorage(app);
     googleProvider = new GoogleAuthProvider();
   } catch (err) {
     console.warn('[Cultivo Firebase] Initialization warning:', err);

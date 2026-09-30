@@ -6,7 +6,7 @@
  * 
  * Zero hardcoded/pre-stored reports.
  * Starts with empty clean state and stores only genuine live analyses.
- * Computes longitudinal suggestions from previously stored analyses.
+ * Computes longitudinal suggestions from previously stored analyses in Hostinger DB.
  */
 
 import { db, isFirebaseConfigured } from '@/config/firebase';
@@ -25,7 +25,6 @@ import {
   getDoc,
   query,
   where,
-  orderBy,
   onSnapshot,
   Unsubscribe,
 } from 'firebase/firestore';
@@ -74,7 +73,7 @@ function saveLocalReports(reports: CropReport[]): void {
 export class ReportsService {
   /**
    * Save a newly created crop diagnosis report
-   * Storing previous analysis data for future trend suggestions
+   * Storing in Hostinger Database and local cache for future trend suggestions
    */
   public static async createReport(report: CropReport): Promise<void> {
     // 1. Persist locally first for zero-latency UI updates & offline fallback
@@ -87,7 +86,18 @@ export class ReportsService {
     }
     saveLocalReports(reports);
 
-    // 2. Synchronize to Cloud Firestore if connected
+    // 2. Persist to Hostinger Server Database
+    try {
+      await fetch('/api/reports', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(report),
+      });
+    } catch (hostingerErr) {
+      console.warn('[ReportsService] Hostinger DB save warning:', hostingerErr);
+    }
+
+    // 3. Optional Firestore sync if configured
     if (isFirebaseConfigured && db) {
       try {
         const docRef = doc(db, REPORTS_COLLECTION, report.id);
@@ -116,7 +126,18 @@ export class ReportsService {
       saveLocalReports(reports);
     }
 
-    // 2. Synchronize to Cloud Firestore
+    // 2. Update Hostinger Database
+    try {
+      await fetch('/api/reports', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ reportId, status }),
+      });
+    } catch (hostingerErr) {
+      console.warn('[ReportsService] Hostinger DB update warning:', hostingerErr);
+    }
+
+    // 3. Synchronize to Cloud Firestore
     if (isFirebaseConfigured && db) {
       try {
         const docRef = doc(db, REPORTS_COLLECTION, reportId);
@@ -147,7 +168,18 @@ export class ReportsService {
       saveLocalReports(reports);
     }
 
-    // 2. Synchronize to Cloud Firestore
+    // 2. Update Hostinger Database
+    try {
+      await fetch('/api/reports', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ reportId, review, status: 'EXPERT_REVIEWED' }),
+      });
+    } catch (hostingerErr) {
+      console.warn('[ReportsService] Hostinger DB review update warning:', hostingerErr);
+    }
+
+    // 3. Synchronize to Cloud Firestore
     if (isFirebaseConfigured && db) {
       try {
         const docRef = doc(db, REPORTS_COLLECTION, reportId);
@@ -166,17 +198,35 @@ export class ReportsService {
    * Get a single report by ID
    */
   public static async getReportById(reportId: string): Promise<CropReport | null> {
-    if (isFirebaseConfigured && db) {
-      const docRef = doc(db, REPORTS_COLLECTION, reportId);
-      const snapshot = await getDoc(docRef);
-      if (snapshot.exists()) {
-        return snapshot.data() as CropReport;
+    const reports = getLocalReports();
+    const match = reports.find((r) => r.id === reportId);
+    if (match) return match;
+
+    // Check Hostinger DB
+    try {
+      const res = await fetch(`/api/reports?id=${encodeURIComponent(reportId)}`);
+      if (res.ok) {
+        const data = await res.json();
+        if (data.report) return data.report;
       }
-      return null;
+    } catch (e) {
+      console.warn('[ReportsService] Hostinger DB single fetch warning:', e);
     }
 
-    const reports = getLocalReports();
-    return reports.find((r) => r.id === reportId) ?? null;
+    // Check Firestore
+    if (isFirebaseConfigured && db) {
+      try {
+        const docRef = doc(db, REPORTS_COLLECTION, reportId);
+        const snapshot = await getDoc(docRef);
+        if (snapshot.exists()) {
+          return snapshot.data() as CropReport;
+        }
+      } catch (e) {
+        console.warn('[ReportsService] Firestore getDoc warning:', e);
+      }
+    }
+
+    return null;
   }
 
   /**
@@ -186,36 +236,37 @@ export class ReportsService {
     reportId: string,
     callback: (report: CropReport | null) => void
   ): Unsubscribe {
-    if (isFirebaseConfigured && db) {
-      const docRef = doc(db, REPORTS_COLLECTION, reportId);
-      return onSnapshot(
-        docRef,
-        (snapshot) => {
-          if (snapshot.exists()) {
-            callback(snapshot.data() as CropReport);
-          } else {
-            callback(null);
+    // 1. Initial check
+    const reports = getLocalReports();
+    callback(reports.find((r) => r.id === reportId) || null);
+
+    // 2. Poll Hostinger DB every 1 second
+    const pollHostinger = async () => {
+      try {
+        const res = await fetch(`/api/reports?id=${encodeURIComponent(reportId)}`);
+        if (res.ok) {
+          const data = await res.json();
+          if (data.report) {
+            callback(data.report);
           }
-        },
-        (error) => {
-          console.error('[ReportsService] Single report subscription error:', error);
         }
-      );
-    }
+      } catch {}
+    };
+
+    const intervalId = setInterval(pollHostinger, 1000);
 
     // Local reactive listener
     const handler = () => {
-      const reports = getLocalReports();
-      const match = reports.find((r) => r.id === reportId) || null;
+      const currentReports = getLocalReports();
+      const match = currentReports.find((r) => r.id === reportId) || null;
       callback(match);
     };
-
-    handler();
 
     window.addEventListener(SYNC_EVENT_NAME, handler);
     window.addEventListener('storage', handler);
 
     return () => {
+      clearInterval(intervalId);
       window.removeEventListener(SYNC_EVENT_NAME, handler);
       window.removeEventListener('storage', handler);
     };
@@ -223,121 +274,127 @@ export class ReportsService {
 
   /**
    * Real-time subscription to a farmer's stored reports
-   * No prestored fake reports — strictly returns genuine user analyses
+   * Continuous 1-second sync with Hostinger DB + local cache
    */
   public static subscribeToFarmerReports(
     farmerId: string,
     callback: (reports: CropReport[]) => void
   ): Unsubscribe {
-    let firestoreUnsub = () => {};
+    // Local reactive listener
+    const getMergedFarmerReports = (serverReports: CropReport[] = []) => {
+      const local = getLocalReports();
+      const map = new Map<string, CropReport>();
 
-    if (isFirebaseConfigured && db) {
-      // Query single field without multi-field composite index dependency
-      const q = query(
-        collection(db, REPORTS_COLLECTION),
-        where('farmer_id', '==', farmerId)
-      );
-
-      firestoreUnsub = onSnapshot(
-        q,
-        (snapshot) => {
-          const list: CropReport[] = [];
-          snapshot.forEach((docSnap) => {
-            list.push(docSnap.data() as CropReport);
-          });
-          // Also incorporate any freshly captured local scan for this farmer
-          const local = getLocalReports();
-          local.forEach((loc) => {
-            if (loc.farmer_id === farmerId && !list.some((r) => r.id === loc.id)) {
-              list.push(loc);
-            }
-          });
-          // Sort client-side by created_at descending
-          list.sort(
-            (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
-          );
-          callback(list);
-        },
-        (error) => {
-          console.warn('[ReportsService] Farmer reports subscription error, using local fallback:', error);
-          const reports = getLocalReports();
-          const userReports = reports.filter((r) => r.farmer_id === farmerId);
-          callback(userReports);
+      // Server takes priority for shared state, local supplements
+      serverReports.forEach((r) => map.set(r.id, r));
+      local.forEach((r) => {
+        if (!map.has(r.id)) {
+          if (r.farmer_id === farmerId || (farmerId !== 'guest_farmer' && r.farmer_id === 'guest_farmer')) {
+            map.set(r.id, r);
+          }
         }
-      );
-    }
+      });
 
-    // Local reactive listener + 1-second interval polling for real-time synchronization
-    const syncHandler = () => {
-      const reports = getLocalReports();
-      const userReports = reports.filter(
+      const list = Array.from(map.values()).filter(
         (r) => r.farmer_id === farmerId || (farmerId !== 'guest_farmer' && r.farmer_id === 'guest_farmer')
       );
-      callback(userReports);
+
+      return list.sort(
+        (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+      );
     };
 
-    syncHandler();
+    // Initial emit
+    callback(getMergedFarmerReports());
 
-    // High-frequency 1-second continuous telemetry sync to ensure real-time reactive updates
-    const syncInterval = setInterval(syncHandler, 1000);
+    // Continuous 1-second sync with Hostinger DB
+    const syncFromHostingerDb = async () => {
+      try {
+        const res = await fetch(`/api/reports?farmer_id=${encodeURIComponent(farmerId)}`);
+        if (res.ok) {
+          const data = await res.json();
+          if (Array.isArray(data.reports)) {
+            callback(getMergedFarmerReports(data.reports));
+          }
+        }
+      } catch (err) {
+        // Fallback to local
+        callback(getMergedFarmerReports());
+      }
+    };
 
-    window.addEventListener(SYNC_EVENT_NAME, syncHandler);
-    window.addEventListener('storage', syncHandler);
+    syncFromHostingerDb();
+    const syncInterval = setInterval(syncFromHostingerDb, 1000);
+
+    const localHandler = () => {
+      callback(getMergedFarmerReports());
+    };
+
+    window.addEventListener(SYNC_EVENT_NAME, localHandler);
+    window.addEventListener('storage', localHandler);
 
     return () => {
-      firestoreUnsub();
       clearInterval(syncInterval);
-      window.removeEventListener(SYNC_EVENT_NAME, syncHandler);
-      window.removeEventListener('storage', syncHandler);
+      window.removeEventListener(SYNC_EVENT_NAME, localHandler);
+      window.removeEventListener('storage', localHandler);
     };
   }
 
   /**
    * Real-time subscription for Agricultural Experts to see incoming reports
+   * Continuous 1-second sync with Hostinger DB
    */
   public static subscribeToExpertQueue(
     callback: (reports: CropReport[]) => void
   ): Unsubscribe {
-    if (isFirebaseConfigured && db) {
-      const q = query(
-        collection(db, REPORTS_COLLECTION)
-      );
+    const getMergedExpertReports = (serverReports: CropReport[] = []) => {
+      const local = getLocalReports();
+      const map = new Map<string, CropReport>();
 
-      return onSnapshot(
-        q,
-        (snapshot) => {
-          const list: CropReport[] = [];
-          snapshot.forEach((docSnap) => {
-            list.push(docSnap.data() as CropReport);
-          });
-          // Sort client-side by created_at descending
-          list.sort(
-            (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
-          );
-          callback(list);
-        },
-        (error) => {
-          console.warn('[ReportsService] Expert queue subscription error, using local fallback:', error);
-          const reports = getLocalReports();
-          callback(reports);
+      serverReports.forEach((r) => map.set(r.id, r));
+      local.forEach((r) => {
+        if (!map.has(r.id)) {
+          map.set(r.id, r);
         }
-      );
-    }
+      });
 
-    // Local reactive listener
-    const handler = () => {
-      const reports = getLocalReports();
-      callback(reports);
+      return Array.from(map.values()).sort(
+        (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+      );
     };
 
-    handler();
+    // Initial emit
+    callback(getMergedExpertReports());
 
-    window.addEventListener(SYNC_EVENT_NAME, handler);
-    window.addEventListener('storage', handler);
+    // Continuous 1-second sync with Hostinger DB
+    const syncFromHostingerDb = async () => {
+      try {
+        const res = await fetch('/api/reports');
+        if (res.ok) {
+          const data = await res.json();
+          if (Array.isArray(data.reports)) {
+            callback(getMergedExpertReports(data.reports));
+          }
+        }
+      } catch {
+        callback(getMergedExpertReports());
+      }
+    };
+
+    syncFromHostingerDb();
+    const syncInterval = setInterval(syncFromHostingerDb, 1000);
+
+    const localHandler = () => {
+      callback(getMergedExpertReports());
+    };
+
+    window.addEventListener(SYNC_EVENT_NAME, localHandler);
+    window.addEventListener('storage', localHandler);
 
     return () => {
-      window.removeEventListener(SYNC_EVENT_NAME, handler);
-      window.removeEventListener('storage', handler);
+      clearInterval(syncInterval);
+      window.removeEventListener(SYNC_EVENT_NAME, localHandler);
+      window.removeEventListener('storage', localHandler);
     };
   }
 

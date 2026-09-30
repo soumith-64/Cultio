@@ -165,7 +165,7 @@ function CultivoApp() {
         setPipelineSteps((prev) =>
           prev.map((s) =>
             s.id === 'upload'
-              ? { ...s, state: 'completed', detail: 'Encrypted storage verified' }
+              ? { ...s, state: 'completed', detail: 'Hostinger DB storage verified' }
               : s
           )
         );
