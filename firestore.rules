@@ -1,0 +1,89 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Helper: Check if user is authenticated
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    // Helper: Check if the user is the document owner
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    // Helper: Retrieve user profile
+    function getUserData() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
+    }
+
+    // Helper: Check if authenticated user has the 'expert' role in their profile
+    function isExpert() {
+      return isAuthenticated() && getUserData().role == 'expert';
+    }
+
+    // User Profile Documents
+    match /users/{userId} {
+      allow read: if isAuthenticated();
+      // Users can create/update their own profile
+      allow create: if isOwner(userId);
+      allow update: if isOwner(userId) && 
+        // Cannot arbitrarily self-promote to expert without validation
+        (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['role']) || 
+         request.resource.data.role in ['farmer', 'expert']);
+    }
+
+    // Crop Diagnostic Reports
+    match /crop_reports/{reportId} {
+      
+      // Read access:
+      // - Farmers can read their own reports
+      // - Experts can read any report requiring review or history
+      allow read: if isAuthenticated() && (
+        resource.data.farmer_id == request.auth.uid || isExpert()
+      );
+
+      // Create access:
+      // - Only authenticated farmers can create reports
+      // - Must bind farmer_id to request.auth.uid
+      // - Initial status must be 'CREATED' or 'AI_ANALYZED'
+      allow create: if isAuthenticated() &&
+        request.resource.data.farmer_id == request.auth.uid &&
+        request.resource.data.status in ['CREATED', 'PROCESSING', 'AI_ANALYZED'] &&
+        request.resource.data.image_url is string &&
+        request.resource.data.location != null &&
+        request.resource.data.environment != null;
+
+      // Update access:
+      allow update: if isAuthenticated() && (
+        // Case 1: Farmer requesting review (status AI_ANALYZED -> PENDING_EXPERT)
+        (
+          resource.data.farmer_id == request.auth.uid &&
+          request.resource.data.farmer_id == resource.data.farmer_id &&
+          request.resource.data.image_url == resource.data.image_url &&
+          request.resource.data.diagnosis == resource.data.diagnosis &&
+          // Farmer cannot alter expert review
+          (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['expert_review'])) &&
+          request.resource.data.status in ['PENDING_EXPERT', 'PROCESSING']
+        )
+        ||
+        // Case 2: Expert submitting review
+        (
+          isExpert() &&
+          // Must preserve original farmer identity, image, location, environmental evidence and AI diagnosis
+          request.resource.data.farmer_id == resource.data.farmer_id &&
+          request.resource.data.image_url == resource.data.image_url &&
+          request.resource.data.location == resource.data.location &&
+          request.resource.data.environment == resource.data.environment &&
+          request.resource.data.diagnosis == resource.data.diagnosis &&
+          // Expert must submit a valid review object with their own UID
+          request.resource.data.expert_review.expert_uid == request.auth.uid &&
+          request.resource.data.status == 'EXPERT_REVIEWED'
+        )
+      );
+
+      // Deletion is prohibited for data integrity
+      allow delete: if false;
+    }
+  }
+}

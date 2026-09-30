@@ -1,0 +1,141 @@
+/**
+ * CULTIVO — Central Domain Types
+ * Strict typing across UI, Services, AI Engine, and Real-Time Cloud Synchronization
+ */
+
+export type UserRole = 'farmer' | 'expert';
+
+export interface UserProfile {
+  uid: string;
+  email: string | null;
+  displayName: string | null;
+  photoURL: string | null;
+  phoneNumber: string | null;
+  role: UserRole;
+  createdAt: string;
+  updatedAt?: string;
+}
+
+export type ReportStatus =
+  | 'CREATED'
+  | 'PROCESSING'
+  | 'AI_ANALYZED'
+  | 'PENDING_EXPERT'
+  | 'EXPERT_REVIEWED';
+
+export type Severity = 'HEALTHY' | 'LOW' | 'MODERATE' | 'CRITICAL';
+
+export type GeolocationStatus =
+  | 'idle'
+  | 'requesting'
+  | 'success'
+  | 'permission_denied'
+  | 'unavailable'
+  | 'timeout'
+  | 'error';
+
+export interface LocationData {
+  latitude: number;
+  longitude: number;
+  accuracy?: number;
+  isFallback: boolean;
+  source: 'device' | 'fallback';
+  regionName?: string;
+}
+
+export interface WeatherData {
+  temp: number; // Celsius
+  humidity: number; // Percentage
+  pressure: number; // hPa
+  condition?: string;
+  isMock: boolean;
+}
+
+export interface SoilData {
+  soil_type: string; // e.g. "Loamy Clay", "Alluvial", "Sandy Loam"
+  soil_ph: number; // e.g. 6.4
+  organic_matter?: string;
+  drainage?: string;
+  isMock: boolean;
+}
+
+export interface EnvironmentData {
+  weather: WeatherData;
+  soil: SoilData;
+}
+
+export interface Diagnosis {
+  plant_type: string;
+  disease_name: string;
+  severity: Severity;
+  confidence?: number; // 0.00 to 1.00
+  uncertainty_note?: string;
+  visual_symptoms?: string[];
+  root_cause_analysis: string;
+}
+
+export interface RecommendationPlan {
+  organic_solutions: string[];
+  chemical_solutions: string[];
+  preventive_actions: string[];
+  monitoring_guidance: string[];
+  ordered_action_plan: string[];
+}
+
+export interface ExpertReview {
+  expert_uid: string;
+  expert_name: string;
+  expert_title?: string;
+  expert_avatar?: string;
+  assessment: string;
+  recommendations: string;
+  reviewed_at: string;
+}
+
+export interface HistoricalInsight {
+  has_previous_data: boolean;
+  previous_analyses_count: number;
+  last_analyzed_date?: string;
+  previous_severity?: Severity;
+  severity_trend?: 'improving' | 'deteriorating' | 'stable' | 'new_crop';
+  pathogen_recurrence_alert?: string;
+  treatment_continuity_suggestion?: string;
+  environmental_recurrence_pattern?: string;
+}
+
+export interface CropReport {
+  id: string;
+  farmer_id: string;
+  farmer_name?: string;
+  image_url: string;
+  thumbnail_url?: string;
+  status: ReportStatus;
+  created_at: string;
+  updated_at: string;
+  location: LocationData;
+  environment: EnvironmentData;
+  diagnosis?: Diagnosis;
+  recommendations?: RecommendationPlan;
+  expert_review?: ExpertReview;
+  historical_insight?: HistoricalInsight;
+}
+
+export type PipelineStepId =
+  | 'capture'
+  | 'upload'
+  | 'geolocation'
+  | 'weather'
+  | 'soil'
+  | 'ai_analysis'
+  | 'recommendations'
+  | 'persist';
+
+export type StepState = 'pending' | 'active' | 'completed' | 'failed' | 'skipped';
+
+export interface PipelineProgressStep {
+  id: PipelineStepId;
+  label: string;
+  state: StepState;
+  detail?: string;
+  error?: string;
+}
