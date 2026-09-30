@@ -1,10 +1,11 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { useAuth } from '@/context/AuthContext';
 import { isFirebaseConfigured } from '@/config/firebase';
 import { useLanguage } from '@/context/LanguageContext';
+import { ImageStorageService } from '@/services/storage';
 import {
   X,
   User,
@@ -18,6 +19,9 @@ import {
   Cloud,
   ArrowRight,
   ExternalLink,
+  Camera,
+  Edit2,
+  Check,
 } from 'lucide-react';
 import Link from 'next/link';
 
@@ -27,13 +31,38 @@ interface UserProfileModalProps {
 }
 
 export const UserProfileModal: React.FC<UserProfileModalProps> = ({ isOpen, onClose }) => {
-  const { user, signOut, selectRole, isApprovedExpert, verifyAndElevateExpert } = useAuth();
+  const { user, signOut, selectRole, isApprovedExpert, verifyAndElevateExpert, updateUserProfile } = useAuth();
   const { t } = useLanguage();
   const [mounted, setMounted] = useState(false);
   const [showVerification, setShowVerification] = useState(false);
   const [accessKey, setAccessKey] = useState('');
   const [isVerifying, setIsVerifying] = useState(false);
   const [verificationError, setVerificationError] = useState<string | null>(null);
+
+  const photoInputRef = useRef<HTMLInputElement>(null);
+  const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
+  const [isEditingName, setIsEditingName] = useState(false);
+  const [newName, setNewName] = useState(user?.displayName || '');
+
+  const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setIsUploadingPhoto(true);
+    try {
+      const compressed = await ImageStorageService.compressImage(file, 400, 0.85);
+      await updateUserProfile({ photoURL: compressed.previewUrl });
+    } catch (err) {
+      console.warn('Failed to upload profile photo:', err);
+    } finally {
+      setIsUploadingPhoto(false);
+    }
+  };
+
+  const handleSaveName = async () => {
+    if (!newName.trim()) return;
+    await updateUserProfile({ displayName: newName.trim() });
+    setIsEditingName(false);
+  };
 
   useEffect(() => {
     setMounted(true);
@@ -97,18 +126,67 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({ isOpen, onCl
             </button>
 
             <div className="flex items-center gap-3.5 pr-8">
-              <div className="w-14 h-14 rounded-2xl bg-white/20 border-2 border-white/40 flex items-center justify-center text-white overflow-hidden shadow-inner flex-shrink-0">
+              <div className="w-14 h-14 rounded-2xl bg-white/20 border-2 border-white/40 flex items-center justify-center text-white overflow-hidden shadow-inner flex-shrink-0 relative group">
                 {user.photoURL ? (
                   <img src={user.photoURL} alt={user.displayName || 'User'} className="w-full h-full object-cover" />
                 ) : (
                   <User className="w-7 h-7 text-white" />
                 )}
+                <button
+                  type="button"
+                  onClick={() => photoInputRef.current?.click()}
+                  title="Upload profile photo"
+                  className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center text-white text-[9px] font-bold cursor-pointer"
+                >
+                  <Camera className="w-4 h-4" />
+                  <span>Photo</span>
+                </button>
+                <input
+                  type="file"
+                  ref={photoInputRef}
+                  accept="image/*"
+                  className="hidden"
+                  onChange={handlePhotoUpload}
+                />
               </div>
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2">
-                  <h2 id="profile-modal-title" className="text-lg sm:text-xl font-extrabold tracking-tight truncate">
-                    {user.displayName || (isExpert ? 'Dr. Agronomist' : 'Field Cultivator')}
-                  </h2>
+                  {isEditingName ? (
+                    <div className="flex items-center gap-1.5">
+                      <input
+                        type="text"
+                        value={newName}
+                        onChange={(e) => setNewName(e.target.value)}
+                        className="px-2 py-1 text-xs font-bold text-[#4E342E] bg-white rounded-lg border border-[#E0D7C6] outline-none"
+                        autoFocus
+                      />
+                      <button
+                        type="button"
+                        onClick={handleSaveName}
+                        className="p-1 rounded bg-[#81C784] text-[#1B5E20] hover:bg-[#A5D6A7] cursor-pointer"
+                        title="Save name"
+                      >
+                        <Check className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  ) : (
+                    <>
+                      <h2 id="profile-modal-title" className="text-lg sm:text-xl font-extrabold tracking-tight truncate">
+                        {user.displayName || (isExpert ? 'Dr. Agronomist' : 'Field Cultivator')}
+                      </h2>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setNewName(user.displayName || '');
+                          setIsEditingName(true);
+                        }}
+                        className="p-1 rounded-md bg-white/20 hover:bg-white/30 text-white/80 hover:text-white transition-colors cursor-pointer"
+                        title="Edit Name"
+                      >
+                        <Edit2 className="w-3 h-3" />
+                      </button>
+                    </>
+                  )}
                 </div>
                 <span
                   className={`inline-flex items-center gap-1 mt-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold tracking-wide uppercase ${

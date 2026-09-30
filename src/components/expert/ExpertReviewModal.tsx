@@ -163,8 +163,13 @@ export const ExpertReviewModal: React.FC<ExpertReviewModalProps> = ({
               <div className="relative rounded-2xl overflow-hidden border-2 border-[#E0D7C6] bg-[#F9F6F0] aspect-[4/3] shadow-inner">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
-                  src={report.image_url}
+                  src={report.image_url || report.thumbnail_url}
                   alt={diag?.plant_type || 'Crop Specimen'}
+                  onError={(e) => {
+                    if (report.thumbnail_url && e.currentTarget.src !== report.thumbnail_url) {
+                      e.currentTarget.src = report.thumbnail_url;
+                    }
+                  }}
                   className="w-full h-full object-cover"
                 />
                 <div className="absolute top-2 left-2 bg-black/60 text-white px-2.5 py-1 rounded text-xs font-bold">

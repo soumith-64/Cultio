@@ -341,6 +341,7 @@ function CultivoApp() {
         farmer_id: userId,
         farmer_name: user?.displayName || 'Field Cultivator',
         image_url: storedImageUrl,
+        thumbnail_url: previewUrl,
         status: 'AI_ANALYZED',
         created_at: now,
         updated_at: now,

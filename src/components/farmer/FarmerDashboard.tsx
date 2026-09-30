@@ -138,8 +138,13 @@ export const FarmerDashboard: React.FC<FarmerDashboardProps> = ({
                     <div className="w-20 h-20 rounded-xl overflow-hidden bg-[#F9F6F0] flex-shrink-0 border border-[#E0D7C6]">
                       {/* eslint-disable-next-line @next/next/no-img-element */}
                       <img
-                        src={report.image_url}
+                        src={report.image_url || report.thumbnail_url}
                         alt={diag?.plant_type || 'Crop Specimen'}
+                        onError={(e) => {
+                          if (report.thumbnail_url && e.currentTarget.src !== report.thumbnail_url) {
+                            e.currentTarget.src = report.thumbnail_url;
+                          }
+                        }}
                         className="w-full h-full object-cover group-hover:scale-105 transition-transform"
                       />
                     </div>

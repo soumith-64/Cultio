@@ -160,8 +160,13 @@ export const ExpertDashboard: React.FC<ExpertDashboardProps> = ({
                   <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-xl overflow-hidden bg-[#F9F6F0] border border-[#E0D7C6] flex-shrink-0">
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
-                      src={report.image_url}
+                      src={report.image_url || report.thumbnail_url}
                       alt={diag?.plant_type || 'Crop Specimen'}
+                      onError={(e) => {
+                        if (report.thumbnail_url && e.currentTarget.src !== report.thumbnail_url) {
+                          e.currentTarget.src = report.thumbnail_url;
+                        }
+                      }}
                       className="w-full h-full object-cover group-hover:scale-105 transition-transform"
                     />
                   </div>

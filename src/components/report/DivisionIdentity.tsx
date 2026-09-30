@@ -12,6 +12,7 @@ export const DivisionIdentity: React.FC<DivisionIdentityProps> = ({ report }) =>
   const { t } = useLanguage();
   const diag = report.diagnosis;
   const conf = diag?.confidence_level || ((diag?.confidence ?? 0) >= 0.8 ? 'High' : (diag?.confidence ?? 0) >= 0.5 ? 'Moderate' : 'Low');
+  const [imgSrc, setImgSrc] = React.useState<string>(report.image_url || report.thumbnail_url || '');
 
   return (
     <section className="bg-[#FFFFFF] border border-[#E0D7C6] rounded-3xl p-6 sm:p-8 shadow-earth">
@@ -20,8 +21,13 @@ export const DivisionIdentity: React.FC<DivisionIdentityProps> = ({ report }) =>
         <div className="w-full sm:w-48 h-48 rounded-2xl overflow-hidden bg-[#F9F6F0] border-2 border-[#E0D7C6] flex-shrink-0 shadow-inner relative group">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
-            src={report.image_url}
+            src={imgSrc}
             alt={diag?.plant_type || 'Crop Specimen'}
+            onError={() => {
+              if (report.thumbnail_url && imgSrc !== report.thumbnail_url) {
+                setImgSrc(report.thumbnail_url);
+              }
+            }}
             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
           />
           <div className="absolute top-2 left-2 bg-black/60 backdrop-blur-sm text-white px-2.5 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wider">
