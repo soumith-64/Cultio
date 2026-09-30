@@ -75,11 +75,16 @@ export const AuthModal: React.FC<AuthModalProps> = ({ initialRole }) => {
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#4E342E]/60 backdrop-blur-sm animate-fadeIn"
+      className="fixed inset-0 z-50 overflow-y-auto bg-[#4E342E]/60 backdrop-blur-sm p-3 sm:p-6 animate-fadeIn"
       role="dialog"
       aria-modal="true"
+      onClick={handleClose}
     >
-      <div className="bg-[#FFFFFF] border border-[#E0D7C6] rounded-3xl max-w-md w-full p-6 sm:p-8 shadow-earth-xl relative max-h-[90vh] overflow-y-auto">
+      <div className="flex min-h-full items-center justify-center py-6 text-center">
+        <div
+          className="bg-[#FFFFFF] border border-[#E0D7C6] rounded-3xl max-w-md w-full p-6 sm:p-8 shadow-earth-xl relative my-auto text-left"
+          onClick={(e) => e.stopPropagation()}
+        >
         <button
           onClick={handleClose}
           className="absolute top-5 right-5 w-8 h-8 rounded-full border border-[#E0D7C6] flex items-center justify-center text-[#795548] hover:bg-[#F9F6F0] cursor-pointer"
@@ -314,5 +319,6 @@ export const AuthModal: React.FC<AuthModalProps> = ({ initialRole }) => {
         </div>
       </div>
     </div>
+  </div>
   );
 };
