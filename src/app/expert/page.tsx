@@ -205,8 +205,57 @@ export default function ExpertPortalPage() {
 
       {/* Main Content Area */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 py-6 sm:py-8 space-y-6">
-        {/* Gate View: When user is not authenticated or not an approved expert */}
-        {!canAccessExpertTerminal && (
+        {/* Gate View: When user is authenticated as farmer (Access Denied - No role switching) */}
+        {isAuthenticated && user?.role === 'farmer' && (
+          <div className="max-w-xl mx-auto my-12 bg-white border-2 border-[#D32F2F]/30 rounded-3xl p-6 sm:p-8 shadow-earth-lg text-center space-y-5 animate-fadeIn">
+            <div className="w-16 h-16 rounded-2xl bg-[#D32F2F]/10 text-[#D32F2F] flex items-center justify-center mx-auto shadow-sm">
+              <ShieldCheck className="w-9 h-9 text-[#D32F2F]" />
+            </div>
+
+            <div>
+              <span className="text-xs font-bold uppercase tracking-wider text-[#D32F2F] bg-[#D32F2F]/10 px-3 py-1 rounded-full">
+                Access Restricted: Cultivator Account
+              </span>
+              <h1 className="text-2xl sm:text-3xl font-black text-[#4E342E] mt-3">
+                Agronomist Terminal Locked
+              </h1>
+              <p className="text-xs sm:text-sm text-[#795548] mt-2 leading-relaxed">
+                You are currently signed in as a <span className="font-bold text-[#2E7D32]">Field Cultivator ({user.displayName || user.email})</span>.
+                In accordance with institutional agricultural governance rules, role-switching is disabled. This clinical terminal is strictly reserved for accredited agronomists, ICAR researchers, and extension specialists.
+              </p>
+            </div>
+
+            <div className="p-4 rounded-2xl bg-[#F9F6F0] border border-[#E0D7C6] text-left text-xs space-y-2">
+              <p className="text-[#4E342E] font-medium leading-relaxed">
+                To access this terminal, please sign out of your farmer account and sign in using your accredited Agricultural Expert credentials.
+              </p>
+            </div>
+
+            <div className="flex flex-col sm:flex-row gap-3 pt-2">
+              <Button
+                variant="primary"
+                size="md"
+                className="flex-1 font-bold text-xs shadow-earth"
+                onClick={async () => {
+                  await signOut();
+                  setShowAuthGateModal(true);
+                }}
+                leftIcon={<LogOut className="w-4 h-4" />}
+              >
+                Sign Out & Open Expert Login
+              </Button>
+
+              <Link href="/" className="flex-1">
+                <Button variant="secondary" size="md" className="w-full font-bold text-xs">
+                  ← Back to Farmer Dashboard
+                </Button>
+              </Link>
+            </div>
+          </div>
+        )}
+
+        {/* Gate View: When user is not authenticated */}
+        {!isAuthenticated && !canAccessExpertTerminal && (
           <div className="max-w-xl mx-auto my-12 bg-white border-2 border-[#2E7D32]/30 rounded-3xl p-6 sm:p-8 shadow-earth-lg text-center space-y-5 animate-fadeIn">
             <div className="w-16 h-16 rounded-2xl bg-[#2E7D32] text-white flex items-center justify-center mx-auto shadow-earth">
               <ShieldCheck className="w-9 h-9 text-[#81C784]" />
@@ -279,7 +328,7 @@ export default function ExpertPortalPage() {
                 onClick={() => setShowAuthGateModal(true)}
                 leftIcon={<ShieldCheck className="w-4 h-4 text-[#2E7D32]" />}
               >
-                Sign In with Institutional Account
+                Sign In with Expert Account
               </Button>
             </div>
 

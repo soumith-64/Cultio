@@ -8,11 +8,12 @@
 ![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-v4-38B2AC?style=for-the-badge&logo=tailwind-css)
 ![Google Gemini](https://img.shields.io/badge/Google_Gemini-2.5_Flash-8E75C2?style=for-the-badge&logo=google)
 ![Firebase](https://img.shields.io/badge/Firebase-Firestore_&_Auth-FFCA28?style=for-the-badge&logo=firebase)
+![Phone.Email OTP](https://img.shields.io/badge/Phone.Email-Instant_OTP-0288D1?style=for-the-badge)
 ![ICAR & CIBRC](https://img.shields.io/badge/Govt_Data-ICAR_%26_CIBRC_Aligned-2E7D32?style=for-the-badge)
 
-**Real-time AI foliar diagnostics, microclimate soil telemetry, live translation, certified human agronomist escalation, and publication-grade PDF reporting.**
+**Real-time AI foliar diagnostics, microclimate soil telemetry, live multilingual translation, dual-tab role authentication, certified human agronomist escalation, and publication-grade PDF reporting.**
 
-[Live Production Web App](https://cultio.wwislib.com) • [Report a Vulnerability](#-security--privacy) • [Accreditation Guide](#-approved-expert-registry--evaluator-credentials)
+[Live Production Web App](https://cultio.wwislib.com) • [Quick Evaluator Login](#-sample-expert-login-details-for-evaluators) • [Architecture Guide](#-system-architecture--workflow)
 
 </div>
 
@@ -22,7 +23,24 @@
 
 **Cultio** is an enterprise-grade agricultural intelligence platform built for smallholders, commercial growers, and certified agronomists. It addresses the critical disconnect between laboratory-grade computer vision models and practical field execution in rural conditions.
 
-By fusing **multimodal visual diagnostic AI (Google Gemini 2.5 Flash)** with **live hyper-local microclimate weather**, **ISRIC SoilGrids edaphic profiles**, and **official government advisory registries (ICAR & CIBRC)**, Cultio delivers decisive, actionable, and legally compliant crop protection guidance in under three seconds.
+By fusing **multimodal visual diagnostic AI (Google Gemini 2.5 Flash)** with **live hyper-local microclimate weather**, **ISRIC SoilGrids edaphic profiles**, **Phone.Email mobile OTP verification**, and **official government advisory registries (ICAR & CIBRC)**, Cultio delivers decisive, actionable, and legally compliant crop protection guidance in under three seconds.
+
+---
+
+## 🔑 Sample Expert Login Details for Evaluators
+
+For hackathon judges and evaluators reviewing the **Agricultural Expert Terminal (`/expert`)**, pre-configured demo credentials are provided right in the signup/signin modal:
+
+| Field | Sample Evaluator Credential |
+|---|---|
+| **Role Tab** | **🔬 Agricultural Expert** (Second Tab) |
+| **Email** | `expert@cultivo.ai` |
+| **Password** | `password123` |
+| **Accreditation Passkey** | `ICAR-EXP-2026` |
+| **Specialization** | Plant Pathology & Crop Health |
+| **Institution** | Indian Council of Agricultural Research (ICAR) |
+
+> ⚡ **1-Click Instant Login**: Open the Sign In modal, click the **"🔬 Agricultural Expert"** tab, and tap the green **"⚡ Instant Sign In as Expert"** button to immediately enter the accredited agronomist terminal without typing!
 
 ---
 
@@ -40,29 +58,36 @@ By fusing **multimodal visual diagnostic AI (Google Gemini 2.5 Flash)** with **l
 
 ## 🌟 Key Features & Capabilities
 
-### 1. 🔬 Decisive Multimodal AI Diagnostics
-- **Gemini 2.5 Flash Engine**: Leverages Google's latest multimodal vision architecture via the official `@google/genai` SDK for sub-second foliar feature extraction.
-- **Decisive Crop Identification**: Accurately classifies crop species across major staples and cash crops: Tomato, Potato, Chilli, Maize, Rice, Wheat, Cotton, Sugarcane, Citrus, and Pulses.
-- **Analytical Confidence & Explanations**: Eliminates unhelpful "low confidence" cop-outs. The model provides an analytical confidence rating (High, Moderate, Low) along with an explicit botanical explanation detailing visible morphological signs (e.g. concentric target-like rings, chlorotic halos, interveinal necrosis).
-- **Differential Diagnoses**: Evaluates alternative candidate pathologies to assist human agronomists during clinical escalation.
-- **Root-Cause Environmental Correlation**: Cross-references ambient relative humidity, soil pH, and recent rainfall to determine whether microclimate conditions catalyzed the pathogen outbreak.
+### 1. 👥 Two-Tab Role Isolation & Authentication
+- **Tab 1: 🌱 Farmer / Cultivator (Normal Person)**:
+  - Instant mobile OTP login via **Phone.Email** (SMS & WhatsApp 1-tap verification).
+  - Google One-Tap sign-in.
+  - Standard email/password registration.
+  - Streamlined, friendly UI designed specifically for rural cultivators.
+- **Tab 2: 🔬 Agricultural Expert (Certified Agronomist)**:
+  - Dedicated institutional login and registration.
+  - Displays sample evaluator login credentials directly on the card with 1-click autofill.
+  - Collects agronomic specialization, license numbers, and research station affiliations.
+- **Strict Role Gatekeeping (No Farmer Role Elevation in Web)**:
+  - In compliance with institutional agricultural data governance, once authenticated as a **Field Cultivator**, **all role-switching options, passkey elevation inputs, and expert links are strictly removed from the web app**.
+  - Farmers cannot switch to expert or view agronomist terminals while logged in as a cultivator.
+  - If a logged-in farmer visits `/expert`, an explicit access restriction screen is presented with a **"Sign Out to Switch Account"** option.
 
-### 2. 🌿 Computer Vision Foliar Metrics & Lesion Analytics
-- **Lesion Surface Area Estimation**: Quantifies percentage of necrotic foliage vs. healthy canopy.
-- **Chlorophyll Health Index (NDVI-Approximation)**: Measures photosynthetic vitality on a -1.0 to +1.0 scale.
-- **Color Distribution Breakdown**: Categorizes foliage pixels into Healthy Green, Chlorotic Yellow, and Necrotic Brown.
-- **Lesion Cluster Counter**: Detects discrete pathogen infection foci across the leaf blade.
-
-### 3. 🏛️ Official Government Guidelines (ICAR & CIBRC Integration)
-- **Verified Research Backing**: Cross-references every diagnosis with official packages of practices from the **Indian Council of Agricultural Research (ICAR)**.
-- **Regulated Chemistry & CIBRC Formulations**: Displays legally approved chemical active ingredients (e.g., Mancozeb 75% WP, Chlorothalonil 75% WP, Azoxystrobin 23% SC) with precise water dilution ratios.
-- **Pre-Harvest Intervals (PHI)**: Enforces mandatory harvest safety waiting periods (in days) to prevent toxic chemical residues in market produce.
-- **Direct Portal Links**: Deep links to verified portals including [Kisan Suvidha (Government of India)](https://kisansuvidha.gov.in).
-
-### 4. 🗣️ Real-Time Multilingual Translation & Voice Dictation
-- **Live Paragraph-Level Translation API (`/api/translate`)**: Translates detailed farmer symptom notes in real-time as they type, with intelligent debouncing and live bilingual preview.
-- **Voice Speech-to-Text Dictation**: One-tap microphone input powered by the native browser Web Speech API, allowing hands-free symptom reporting directly in the field.
-- **Full In-App UI Localization**: Instant toggle across **8 languages**:
+### 2. 🌐 Live Dynamic Web & Report Translator
+- **Translate Everything on Demand**: When a user selects a language or taps the **"Translate Report Live"** button, the platform live-translates the entire report in real-time via Google Gemini.
+- **Full Report Content Translation**:
+  - Matched crop & botanical species names
+  - Primary diagnosed condition & severity
+  - Biological etiology & root-cause narrative
+  - Visual symptom observations
+  - Ordered action plan steps (immediate containment, eradication, recovery)
+  - Organic remedies and dosages
+  - CIBRC-approved chemical formulations with active ingredients and Pre-Harvest Intervals (PHI)
+  - Official ICAR government advisories
+  - Certified agronomist clinical prescriptions
+- **Bilingual & Instant View Toggle**: Seamlessly toggle between "View Original (English)" and "Live Translated ([Language])".
+- **Translated PDF Export**: When downloading the official PDF report while viewing in a translated language, the exported publication-grade PDF is generated in the translated language.
+- **8 Supported Languages**:
   - English (`en`)
   - Hindi (`hi` — हिन्दी)
   - Telugu (`te` — తెలుగు)
@@ -72,17 +97,36 @@ By fusing **multimodal visual diagnostic AI (Google Gemini 2.5 Flash)** with **l
   - Bengali (`bn` — বাংলা)
   - Spanish (`es` — Español)
 
-### 5. 🔒 Accredited Agronomist Portal & Expert Gatekeeping
-- **Strict Role Gatekeeping**: Only approved institutional IDs or verified agronomist passkeys can access expert capabilities.
-- **Hidden from Standard Farmers**: The "Expert Portal" link and "Switch Role" toggles are completely hidden from regular cultivator views to prevent clutter and operational errors.
-- **Agronomist Clinical Terminal (`/expert`)**:
-  - Protected by an accredited access restriction gate requiring verified agronomist credentials.
-  - Live incoming escalated case queue sorted by urgency and recency.
-  - Side-by-side inspection of high-resolution specimen photos, foliar CV metrics, and edaphic telemetry.
-  - Structured clinical prescription tools with standard agronomic finding templates.
-- **Binding Human Review Priority**: When an accredited expert submits an evaluation, their clinical prescription is prominently pinned **above** the AI recommendations with their credentials and verification stamp.
+### 3. 🔬 Decisive Multimodal AI Diagnostics
+- **Gemini 2.5 Flash Engine**: Leverages Google's latest multimodal vision architecture via the official `@google/genai` SDK for sub-second foliar feature extraction.
+- **Decisive Crop Identification**: Accurately classifies crop species across major staples and cash crops: Tomato, Potato, Chilli, Maize, Rice, Wheat, Cotton, Sugarcane, Citrus, and Pulses.
+- **Analytical Confidence & Explanations**: Eliminates unhelpful "low confidence" cop-outs. The model provides an analytical confidence rating (High, Moderate, Low) along with an explicit botanical explanation detailing visible morphological signs.
+- **Differential Diagnoses**: Evaluates alternative candidate pathologies to assist human agronomists during clinical escalation.
+- **Root-Cause Environmental Correlation**: Cross-references ambient relative humidity, soil pH, and recent rainfall to determine whether microclimate conditions catalyzed the pathogen outbreak.
 
-### 6. 📄 Publication-Grade PDF Report Export
+### 4. 🌿 Computer Vision Foliar Metrics & Lesion Analytics
+- **Lesion Surface Area Estimation**: Quantifies percentage of necrotic foliage vs. healthy canopy.
+- **Chlorophyll Health Index (NDVI-Approximation)**: Measures photosynthetic vitality on a -1.0 to +1.0 scale.
+- **Color Distribution Breakdown**: Categorizes foliage pixels into Healthy Green, Chlorotic Yellow, and Necrotic Brown.
+- **Lesion Cluster Counter**: Detects discrete pathogen infection foci across the leaf blade.
+
+### 5. 🏛️ Official Government Guidelines (ICAR & CIBRC Integration)
+- **Verified Research Backing**: Cross-references every diagnosis with official packages of practices from the **Indian Council of Agricultural Research (ICAR)**.
+- **Regulated Chemistry & CIBRC Formulations**: Displays legally approved chemical active ingredients (e.g., Mancozeb 75% WP, Chlorothalonil 75% WP, Azoxystrobin 23% SC) with precise water dilution ratios.
+- **Pre-Harvest Intervals (PHI)**: Enforces mandatory harvest safety waiting periods (in days) to prevent toxic chemical residues in market produce.
+- **Direct Portal Links**: Deep links to verified portals including [Kisan Suvidha (Government of India)](https://kisansuvidha.gov.in).
+
+### 6. 📱 Phone.Email Instant Mobile OTP Sign In
+- Integrated with the **Phone.Email** lightweight instant sign-in button using Client ID `13311688567845248231`.
+- Authenticates users via real SMS or WhatsApp OTP without requiring passwords or complex email verification steps.
+- Backend verified through `/api/auth/phone-verify` route for production security.
+
+### 7. 🔒 Accredited Agronomist Portal (`/expert`)
+- **Protected Terminal Gate**: Only approved institutional IDs (`@icar.gov.in`, `@gov.in`, `expert@cultivo.ai`) or valid passkeys (`ICAR-EXP-2026`) can unlock the terminal.
+- **Live Incoming Case Queue**: Real-time Firestore synchronization of escalated field cases awaiting clinical review.
+- **Structured Agronomist Prescriptions**: Certified agronomists issue binding clinical prescriptions that automatically pin **above** AI recommendations on the farmer's device.
+
+### 8. 📄 Publication-Grade PDF Report Export
 - **One-Click Instant Download**: Generates high-resolution, vector-crisp PDF reports directly in the browser via `jsPDF`.
 - **Comprehensive Document Layout**:
   - Official Cultio Forest Green header & status badge
@@ -96,15 +140,6 @@ By fusing **multimodal visual diagnostic AI (Google Gemini 2.5 Flash)** with **l
   - Longitudinal field history and recurrence trend alerts
   - Certified agronomist clinical endorsement (if reviewed)
   - Digital verification hash and official compliance footer
-
-### 7. 🛰️ Live Environmental & Edaphic Telemetry
-- **Hardware GPS Geolocation**: Obtains precise field coordinates via the HTML5 Geolocation API, with graceful agro-ecological fallbacks (e.g. Coimbatore Agro-Ecological Belt `11.0168°N, 76.9558°E`).
-- **OpenWeather Agro Telemetry**: Real-time ambient temperature, relative humidity, and atmospheric barometric pressure.
-- **ISRIC SoilGrids Profiling**: High-resolution soil profile integration including soil classification (Alluvial, Loamy Clay, Sandy Loam), soil reaction (pH), and drainage characteristics.
-
-### 8. 🔄 Real-Time Dual-Channel Cloud Synchronization
-- **Firebase Firestore Live Sync**: Subscribed via real-time `onSnapshot` listeners. When an agronomist reviews a report on desktop, the farmer's mobile interface updates live without page refreshes.
-- **Local Prototype Reactive Mode**: If Firebase credentials are not configured, Cultio seamlessly switches to an in-memory reactive event system, enabling 100% offline-capable hackathon evaluations.
 
 ---
 
@@ -123,11 +158,6 @@ Cultio is designed with an **Earthical Palette** engineered for high-contrast su
 | `earth-danger` | `#D32F2F` | Critical severity & fungal alerts |
 | `earth-warning`| `#FFA000` | Moderate severity & cautionary notes |
 | `earth-border` | `#E0D7C6` | Sandstone card borders & dividers |
-
-**Mobile-First Ergonomics**:
-- 48×48px minimum touch targets for gloved or outdoor operation.
-- Modal alignment optimized for laptop and mobile viewports with zero header clipping.
-- Responsive sticky navigation with localized language pickers.
 
 ---
 
@@ -155,6 +185,7 @@ flowchart TD
     I & J & K --> L["📑 Structured 5-Division Diagnostic Report"]
     
     L --> M{"Farmer Action"}
+    M -->|Translate| T["🌐 Live Translate Entire Report (8 Languages)"]
     M -->|Download| N["📄 One-Click PDF Report (jsPDF)"]
     M -->|Escalate| O["🚨 Request Certified Agronomist Review"]
     
@@ -176,8 +207,10 @@ Cultio/
 ├── src/
 │   ├── app/
 │   │   ├── api/
+│   │   │   ├── auth/
+│   │   │   │   └── phone-verify/ # Phone.Email backend verification
 │   │   │   ├── diagnose/       # Gemini 2.5 Flash multimodal diagnostic endpoint
-│   │   │   ├── translate/      # Real-time multilingual translation endpoint
+│   │   │   ├── translate/      # Real-time full report & text translation endpoint
 │   │   │   └── upload/         # Specimen upload handling
 │   │   ├── expert/             # Dedicated Accredited Agronomist Portal page
 │   │   ├── globals.css         # Tailwind v4 theme tokens & Earthical variables
@@ -185,10 +218,11 @@ Cultio/
 │   │   └── page.tsx            # Main application router (Landing / Diagnostic / Camera)
 │   ├── components/
 │   │   ├── auth/
-│   │   │   ├── AuthModal.tsx          # Google & Email authentication modal
+│   │   │   ├── AuthModal.tsx          # Dual-tab Farmer & Expert authentication modal
+│   │   │   ├── PhoneEmailButton.tsx   # Phone.Email instant mobile OTP button
 │   │   │   ├── PrivacyConsentModal.tsx # Hardware permissions & privacy policy
 │   │   │   ├── RoleModal.tsx          # Workspace setup & passkey gateway
-│   │   │   └── UserProfileModal.tsx   # User profile & accreditation verify modal
+│   │   │   └── UserProfileModal.tsx   # User profile modal (strictly isolated for farmers)
 │   │   ├── camera/
 │   │   │   ├── CameraWorkflow.tsx     # Hardware capture, translation & voice dictation
 │   │   │   └── DiagnosticProgress.tsx # Real-time transparent pipeline status
@@ -197,6 +231,7 @@ Cultio/
 │   │   │   └── ExpertReviewModal.tsx  # Structured clinical prescription modal
 │   │   ├── layout/
 │   │   │   ├── LanguageSelector.tsx   # 8-language in-app dropdown
+│   │   │   ├── MobileBottomNav.tsx    # Responsive bottom navigation (farmer-isolated)
 │   │   │   └── Navbar.tsx             # Responsive header with role gatekeeping
 │   │   ├── report/
 │   │   │   ├── DivisionIdentity.tsx       # Division 1: Crop identity & status
@@ -207,14 +242,14 @@ Cultio/
 │   │   │   ├── DivisionComputerVision.tsx # Lesion area % & canopy density
 │   │   │   ├── DivisionHistoryInsights.tsx# Longitudinal trend comparisons
 │   │   │   ├── ExpertNoteCard.tsx         # Pinned human agronomist review
-│   │   │   └── ReportView.tsx             # Complete report viewer & PDF download
+│   │   │   └── ReportView.tsx             # Live report viewer, translator & PDF download
 │   │   └── ui/                            # Atomic design buttons, cards, badges
 │   ├── config/
 │   │   ├── experts.ts          # Approved agronomist whitelist & passkey validator
 │   │   └── firebase.ts         # Firebase initialization & client configuration
 │   ├── context/
 │   │   ├── AuthContext.tsx     # Session management & expert accreditation logic
-│   │   └── LanguageContext.tsx # 8-language in-app dictionary & switcher
+│   │   └── LanguageContext.tsx # 8-language in-app dictionary & live report translation
 │   ├── services/
 │   │   ├── recommendations.ts  # ICAR/CIBRC rule engine & action plans
 │   │   ├── reportExport.ts     # Publication-grade vector PDF generator (jsPDF)
@@ -290,36 +325,6 @@ Open [http://localhost:3000](http://localhost:3000) in your browser.
 npm run build
 npm start
 ```
-
----
-
-## 🔑 Approved Expert Registry & Evaluator Credentials
-
-To test the **Accredited Agronomist Terminal (`/expert`)**, use any of the following approved institutional identities or passkeys:
-
-### Approved Accreditation Passkeys
-| Passkey | Authority | Description |
-|---|---|---|
-| `ICAR-EXP-2026` | ICAR & State Extension | Primary evaluation passkey |
-| `CCA-AGRI-8492` | Certified Crop Advisor | Certified agronomist license |
-| `CULTIO-EXPERT-99` | Cultio Agronomy Team | Research station bypass key |
-
-### Approved Institutional Email Domains
-- Any email ending with `@icar.gov.in`
-- Any email ending with `@iasri.res.in`
-- Any email ending with `@gov.in`
-- Any email ending with `@cultivo.ai`
-- Whitelisted test account: `soumith64@gmail.com`
-
----
-
-## 🔒 Security & Privacy
-
-1. **Camera & Location Privacy**: Hardware sensors are only activated after explicit user consent via the `PrivacyConsentModal`. No biometric or GPS data is sold or shared with commercial advertising brokers.
-2. **Secure Firebase Security Rules**:
-   - `firestore.rules` enforces that only authenticated users with verified agronomist roles can write to the `expert_review` sub-collection.
-   - Farmers can only modify reports associated with their specific `farmer_id`.
-3. **Bandwidth Optimization**: Client-side HTML5 Canvas compressors automatically downsample captured photographs before transmission to protect rural 2G/3G data allowances.
 
 ---
 

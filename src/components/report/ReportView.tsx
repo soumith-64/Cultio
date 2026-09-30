@@ -22,19 +22,26 @@ interface ReportViewProps {
 }
 
 export const ReportView: React.FC<ReportViewProps> = ({ initialReport, onBack }) => {
-  const { t } = useLanguage();
+  const { t, language, translateReportLive, languages } = useLanguage();
   const [report, setReport] = useState<CropReport>(initialReport);
   const [isEscalating, setIsEscalating] = useState<boolean>(false);
   const [justUpdated, setJustUpdated] = useState<boolean>(false);
   const [isDownloading, setIsDownloading] = useState<boolean>(false);
   const [downloadSuccess, setDownloadSuccess] = useState<boolean>(false);
 
+  // LIVE TRANSLATOR STATE
+  const [isTranslating, setIsTranslating] = useState<boolean>(false);
+  const [translatedReportData, setTranslatedReportData] = useState<any | null>(null);
+  const [showTranslated, setShowTranslated] = useState<boolean>(language !== 'en');
+  const [lastTranslatedLang, setLastTranslatedLang] = useState<string>('');
+
+  const currentLangObj = languages.find((l) => l.code === language) || languages[0];
+
   // REAL-TIME FIRESTORE LISTENER
   // Updates automatically when an expert submits a review from another device/browser
   useEffect(() => {
     const unsubscribe = ReportsService.subscribeToReport(initialReport.id, (updated) => {
       if (updated) {
-        // If an expert review just landed, trigger a subtle celebration/update cue
         if (!report.expert_review && updated.expert_review) {
           setJustUpdated(true);
           setTimeout(() => setJustUpdated(false), 4000);
@@ -45,6 +52,35 @@ export const ReportView: React.FC<ReportViewProps> = ({ initialReport, onBack })
 
     return () => unsubscribe();
   }, [initialReport.id, report.expert_review]);
+
+  // AUTO-TRANSLATE TRIGGER WHEN USER SELECTS NON-ENGLISH LANGUAGE OR ASKS TO TRANSLATE
+  const performLiveTranslation = async (targetLang: string = language) => {
+    if (targetLang === 'en') {
+      setShowTranslated(false);
+      return;
+    }
+    setIsTranslating(true);
+    try {
+      const res = await translateReportLive(report, targetLang);
+      if (res && res.translated_report) {
+        setTranslatedReportData(res.translated_report);
+        setShowTranslated(true);
+        setLastTranslatedLang(targetLang);
+      }
+    } catch (err) {
+      console.warn('Live translation error:', err);
+    } finally {
+      setIsTranslating(false);
+    }
+  };
+
+  useEffect(() => {
+    if (language !== 'en' && lastTranslatedLang !== language) {
+      performLiveTranslation(language);
+    } else if (language === 'en') {
+      setShowTranslated(false);
+    }
+  }, [language]);
 
   const handleRequestExpert = async () => {
     setIsEscalating(true);
@@ -65,7 +101,20 @@ export const ReportView: React.FC<ReportViewProps> = ({ initialReport, onBack })
   const handleDownloadPdf = async () => {
     setIsDownloading(true);
     try {
-      await downloadReportAsPdf(report);
+      // Export translated report if user is in translated mode
+      const exportTarget = (showTranslated && translatedReportData) ? {
+        ...report,
+        diagnosis: {
+          ...report.diagnosis,
+          ...translatedReportData.diagnosis,
+        },
+        recommendations: {
+          ...report.recommendations,
+          ...translatedReportData.recommendations,
+        },
+      } : report;
+
+      await downloadReportAsPdf(exportTarget);
       setDownloadSuccess(true);
       setTimeout(() => setDownloadSuccess(false), 3500);
     } catch (err) {
@@ -77,6 +126,43 @@ export const ReportView: React.FC<ReportViewProps> = ({ initialReport, onBack })
   };
 
   const hasExpertReview = Boolean(report.expert_review);
+
+  // Compute effective view objects based on translation toggle
+  const effectiveDiagnosis = (showTranslated && translatedReportData?.diagnosis && report.diagnosis)
+    ? {
+        ...report.diagnosis,
+        plant_type: translatedReportData.diagnosis.plant_type || report.diagnosis.plant_type,
+        disease_name: translatedReportData.diagnosis.disease_name || report.diagnosis.disease_name,
+        confidence_explanation: translatedReportData.diagnosis.confidence_explanation || report.diagnosis.confidence_explanation,
+        root_cause_analysis: translatedReportData.diagnosis.root_cause_analysis || report.diagnosis.root_cause_analysis,
+        visual_symptoms: translatedReportData.diagnosis.visual_symptoms?.length ? translatedReportData.diagnosis.visual_symptoms : report.diagnosis.visual_symptoms,
+        recommended_next_steps: translatedReportData.diagnosis.recommended_next_steps?.length ? translatedReportData.diagnosis.recommended_next_steps : report.diagnosis.recommended_next_steps,
+        differential_diagnoses: translatedReportData.diagnosis.differential_diagnoses?.length ? translatedReportData.diagnosis.differential_diagnoses : report.diagnosis.differential_diagnoses,
+        government_guideline: translatedReportData.diagnosis.government_guideline ? {
+          ...report.diagnosis.government_guideline,
+          ...translatedReportData.diagnosis.government_guideline,
+        } : report.diagnosis.government_guideline,
+      }
+    : report.diagnosis;
+
+  const effectiveRecommendations = (showTranslated && translatedReportData?.recommendations && report.recommendations)
+    ? {
+        ...report.recommendations,
+        ordered_action_plan: translatedReportData.recommendations.ordered_action_plan?.length ? translatedReportData.recommendations.ordered_action_plan : report.recommendations.ordered_action_plan,
+        organic_solutions: translatedReportData.recommendations.organic_solutions?.length ? translatedReportData.recommendations.organic_solutions : report.recommendations.organic_solutions,
+        chemical_solutions: translatedReportData.recommendations.chemical_solutions?.length ? translatedReportData.recommendations.chemical_solutions : report.recommendations.chemical_solutions,
+        preventive_actions: translatedReportData.recommendations.preventive_actions?.length ? translatedReportData.recommendations.preventive_actions : report.recommendations.preventive_actions,
+        monitoring_guidance: translatedReportData.recommendations.monitoring_guidance?.length ? translatedReportData.recommendations.monitoring_guidance : report.recommendations.monitoring_guidance,
+      }
+    : report.recommendations;
+
+  const effectiveExpertReview = (showTranslated && translatedReportData?.expert_review && report.expert_review)
+    ? {
+        ...report.expert_review,
+        assessment: translatedReportData.expert_review.assessment || report.expert_review.assessment,
+        recommendations: translatedReportData.expert_review.recommendations || report.expert_review.recommendations,
+      }
+    : report.expert_review;
 
   return (
     <div className="space-y-6 max-w-4xl mx-auto pb-12 animate-fadeIn">
@@ -137,6 +223,70 @@ export const ReportView: React.FC<ReportViewProps> = ({ initialReport, onBack })
         </div>
       </div>
 
+      {/* LIVE AI TRANSLATION CONTROL BAR */}
+      <div className="bg-gradient-to-r from-[#2E7D32]/10 via-[#F9F6F0] to-[#FFFFFF] border-2 border-[#2E7D32]/30 rounded-3xl p-4 sm:p-5 shadow-earth flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-2xl bg-[#2E7D32] text-white flex items-center justify-center shadow-sm shrink-0">
+            <Sparkles className="w-5 h-5 text-[#81C784]" />
+          </div>
+          <div>
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className="text-xs font-bold uppercase tracking-wider text-[#2E7D32]">
+                Live AI Agronomic Translator
+              </span>
+              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-[#2E7D32]/15 text-[#2E7D32]">
+                {currentLangObj.flag} {currentLangObj.nativeName}
+              </span>
+              {showTranslated && (
+                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-[#2E7D32] text-white">
+                  Translated Live
+                </span>
+              )}
+            </div>
+            <p className="text-xs text-[#795548] mt-0.5">
+              {isTranslating
+                ? `Translating entire agronomic diagnosis and prescription into ${currentLangObj.nativeName} in real-time...`
+                : showTranslated
+                ? `Viewing full diagnosis, ICAR advisory, and dosages in ${currentLangObj.nativeName}.`
+                : `Translate complete technical diagnosis and action plans into ${currentLangObj.nativeName}.`}
+            </p>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-2 self-end sm:self-center shrink-0">
+          {showTranslated ? (
+            <button
+              onClick={() => setShowTranslated(false)}
+              className="px-3 py-1.5 rounded-xl border border-[#E0D7C6] bg-white hover:bg-[#F9F6F0] text-xs font-bold text-[#4E342E] transition-all cursor-pointer shadow-xs"
+            >
+              View Original (English)
+            </button>
+          ) : (
+            <Button
+              variant="primary"
+              size="sm"
+              onClick={() => performLiveTranslation(language === 'en' ? 'hi' : language)}
+              isLoading={isTranslating}
+              leftIcon={<Sparkles className="w-3.5 h-3.5 text-[#81C784]" />}
+              className="text-xs font-bold shadow-earth"
+            >
+              {language === 'en' ? 'Translate to Hindi' : `Translate Live (${currentLangObj.nativeName})`}
+            </Button>
+          )}
+
+          {showTranslated && (
+            <button
+              onClick={() => performLiveTranslation(language)}
+              disabled={isTranslating}
+              className="p-1.5 rounded-xl border border-[#E0D7C6] bg-white hover:bg-[#F9F6F0] text-[#2E7D32] transition-colors cursor-pointer"
+              title="Refresh Live Translation"
+            >
+              <Sparkles className={`w-4 h-4 ${isTranslating ? 'animate-spin' : ''}`} />
+            </button>
+          )}
+        </div>
+      </div>
+
       {/* Real-time Update Alert Banner */}
       {justUpdated && (
         <div className="bg-[#2E7D32] text-white p-4 rounded-2xl flex items-center justify-between shadow-earth-lg animate-bounce">
@@ -153,14 +303,14 @@ export const ReportView: React.FC<ReportViewProps> = ({ initialReport, onBack })
 
       {/* DIRECTIVE 29: EXPERT REVIEW PRIORITY */}
       {/* When an expert review exists, it MUST appear ABOVE the AI recommendation */}
-      {hasExpertReview && report.expert_review && (
+      {hasExpertReview && effectiveExpertReview && (
         <div className="relative">
-          <ExpertNoteCard review={report.expert_review} />
+          <ExpertNoteCard review={effectiveExpertReview} />
         </div>
       )}
 
       {/* DIVISION 3: AI DIAGNOSIS & ROOT CAUSE */}
-      {report.diagnosis && <DivisionDiagnosis diagnosis={report.diagnosis} />}
+      {effectiveDiagnosis && <DivisionDiagnosis diagnosis={effectiveDiagnosis} />}
 
       {/* HISTORICAL FIELD INTELLIGENCE & LONGITUDINAL SUGGESTIONS */}
       {report.historical_insight && (
@@ -179,8 +329,8 @@ export const ReportView: React.FC<ReportViewProps> = ({ initialReport, onBack })
       <DivisionEnvironment environment={report.environment} />
 
       {/* DIVISION 4: ACTION PLAN */}
-      {report.recommendations && (
-        <DivisionActionPlan plan={report.recommendations} />
+      {effectiveRecommendations && (
+        <DivisionActionPlan plan={effectiveRecommendations} />
       )}
 
       {/* PROFESSIONAL DOCUMENT EXPORT CALLOUT */}

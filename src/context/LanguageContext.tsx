@@ -533,6 +533,7 @@ interface LanguageContextType {
   setLanguage: (lang: SupportedLanguage) => void;
   t: (key: string) => string;
   translateLive: (text: string, targetLang?: string) => Promise<TranslationResult>;
+  translateReportLive: (report: any, targetLang?: string) => Promise<{ success: boolean; translated_report: any; is_fallback?: boolean }>;
   languages: LanguageOption[];
 }
 
@@ -594,6 +595,33 @@ export const LanguageProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     }
   };
 
+  const translateReportLive = async (
+    report: any,
+    targetLang: string = language
+  ): Promise<{ success: boolean; translated_report: any; is_fallback?: boolean }> => {
+    if (!report) {
+      return { success: false, translated_report: null };
+    }
+    try {
+      const res = await fetch('/api/translate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          report,
+          target_language: targetLang,
+        }),
+      });
+      if (!res.ok) {
+        throw new Error('Report translation failed');
+      }
+      const data = await res.json();
+      return data;
+    } catch (e) {
+      console.warn('Live report translation call failed, returning original:', e);
+      return { success: false, translated_report: report, is_fallback: true };
+    }
+  };
+
   return (
     <LanguageContext.Provider
       value={{
@@ -601,6 +629,7 @@ export const LanguageProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         setLanguage,
         t,
         translateLive,
+        translateReportLive,
         languages: SUPPORTED_LANGUAGES,
       }}
     >

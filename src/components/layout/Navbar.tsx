@@ -51,35 +51,15 @@ export const Navbar: React.FC<NavbarProps> = ({ currentView, onNavigate }) => {
           {/* In-App Language Selector */}
           <LanguageSelector />
 
-          {/* Only show Expert Portal link to approved identities */}
-          {isApprovedExpert && (
+          {/* Only show Expert Portal link to certified experts (never to farmers) */}
+          {isApprovedExpert && user?.role === 'expert' && (
             <div className="flex items-center bg-[#F9F6F0] p-1 rounded-xl border border-[#E0D7C6]">
-              <button
-                onClick={() => {
-                  selectRole('farmer');
-                  onNavigate('farmer');
-                }}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
-                  currentView === 'farmer' || user?.role === 'farmer'
-                    ? 'bg-[#2E7D32] text-white shadow-sm'
-                    : 'text-[#4E342E] hover:bg-[#EFE8DC]'
-                }`}
-                title="Farmer Diagnostic Workspace"
-              >
-                <Sprout className="w-3.5 h-3.5" />
-                <span className="hidden xs:inline">{t('farmer_portal')}</span>
-              </button>
-
               <Link
                 href="/expert"
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
-                  user?.role === 'expert'
-                    ? 'bg-[#2E7D32] text-white shadow-sm'
-                    : 'text-[#4E342E] hover:bg-[#EFE8DC]'
-                }`}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold bg-[#2E7D32] text-white shadow-sm transition-all cursor-pointer"
                 title="Open Dedicated Expert Agronomist Portal"
               >
-                <ShieldCheck className="w-3.5 h-3.5 text-[#2E7D32]" />
+                <ShieldCheck className="w-3.5 h-3.5 text-white" />
                 <span className="hidden xs:inline">{t('expert_portal')}</span>
               </Link>
             </div>

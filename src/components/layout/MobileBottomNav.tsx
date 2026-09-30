@@ -62,15 +62,17 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({
           </span>
         </button>
 
-        {/* Expert Portal Direct Link */}
-        <Link
-          href="/expert"
-          className="flex flex-col items-center justify-center py-1 px-2.5 rounded-xl text-[#795548] hover:text-[#2E7D32] transition-all cursor-pointer"
-          title="Dedicated Expert Agronomist Portal"
-        >
-          <ShieldCheck className="w-5 h-5 mb-0.5 text-[#2E7D32]" />
-          <span className="text-[10px] font-bold tracking-tight">Expert</span>
-        </Link>
+        {/* Expert Portal Direct Link (Expert Role Only) */}
+        {user?.role === 'expert' && (
+          <Link
+            href="/expert"
+            className="flex flex-col items-center justify-center py-1 px-2.5 rounded-xl text-[#795548] hover:text-[#2E7D32] transition-all cursor-pointer"
+            title="Dedicated Expert Agronomist Portal"
+          >
+            <ShieldCheck className="w-5 h-5 mb-0.5 text-[#2E7D32]" />
+            <span className="text-[10px] font-bold tracking-tight">Expert</span>
+          </Link>
+        )}
 
         {/* User Profile */}
         <button
