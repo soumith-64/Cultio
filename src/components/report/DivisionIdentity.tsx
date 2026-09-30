@@ -1,6 +1,7 @@
 import React from 'react';
 import { CropReport } from '@/types';
 import { SeverityBadge, StatusBadge } from '@/components/ui/Badge';
+import { useLanguage } from '@/context/LanguageContext';
 import { MapPin, Calendar, CheckCircle2, ShieldCheck, Landmark, MessageSquareText } from 'lucide-react';
 
 interface DivisionIdentityProps {
@@ -8,6 +9,7 @@ interface DivisionIdentityProps {
 }
 
 export const DivisionIdentity: React.FC<DivisionIdentityProps> = ({ report }) => {
+  const { t } = useLanguage();
   const diag = report.diagnosis;
   const conf = diag?.confidence_level || ((diag?.confidence ?? 0) >= 0.8 ? 'High' : (diag?.confidence ?? 0) >= 0.5 ? 'Moderate' : 'Low');
 
@@ -49,21 +51,21 @@ export const DivisionIdentity: React.FC<DivisionIdentityProps> = ({ report }) =>
             {diag?.government_guideline && (
               <span className="text-xs font-bold px-2.5 py-1 rounded-lg border bg-[#2E7D32]/10 text-[#2E7D32] border-[#2E7D32]/30 flex items-center gap-1">
                 <Landmark className="w-3 h-3" />
-                <span>Govt ICAR & CIBRC Verified</span>
+                <span>{t('gov_guidelines')}</span>
               </span>
             )}
 
             {diag?.farmer_notes && (
               <span className="text-xs font-bold px-2.5 py-1 rounded-lg border bg-[#EFE8DC] text-[#4E342E] border-[#E0D7C6] flex items-center gap-1">
                 <MessageSquareText className="w-3 h-3 text-[#2E7D32]" />
-                <span>Farmer Notes Attached</span>
+                <span>Farmer Notes</span>
               </span>
             )}
           </div>
 
           <div>
             <span className="text-xs font-bold uppercase tracking-wider text-[#795548] block">
-              Matched Crop & Botanical Species
+              {t('crop_identification')}
             </span>
             <h1 className="text-2xl sm:text-3xl font-extrabold text-[#4E342E] tracking-tight">
               {diag?.plant_type || 'Processing Crop...'}
@@ -72,7 +74,7 @@ export const DivisionIdentity: React.FC<DivisionIdentityProps> = ({ report }) =>
 
           <div className="p-3.5 rounded-2xl bg-[#F9F6F0] border border-[#E0D7C6] space-y-1">
             <span className="text-xs font-bold uppercase tracking-wider text-[#795548]">
-              Primary Diagnosed Foliar Condition
+              {t('primary_condition')}
             </span>
             <div className="text-lg sm:text-xl font-bold text-[#D32F2F]">
               {diag?.disease_name || 'Analyzing symptoms...'}

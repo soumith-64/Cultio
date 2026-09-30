@@ -47,15 +47,15 @@ export const FarmerDashboard: React.FC<FarmerDashboardProps> = ({
         <div className="max-w-xl mx-auto space-y-4 relative z-10">
           <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[#81C784]/20 border border-[#81C784]/40 text-[#2E7D32] text-xs font-bold uppercase tracking-wider">
             <Sparkles className="w-3.5 h-3.5 text-[#2E7D32]" />
-            <span>AI Field Instrument</span>
+            <span>{t('hero_badge')}</span>
           </div>
 
           <h1 className="text-3xl sm:text-4xl font-extrabold text-[#4E342E] tracking-tight leading-tight">
-            Diagnose Crop Health in the Field
+            {t('hero_title')}
           </h1>
 
           <p className="text-base sm:text-lg text-[#795548] leading-relaxed">
-            Capture a photograph of any leaf, stem, or fruit. Cultivo analyzes environmental soil & weather telemetry to pinpoint disease and give actionable treatment plans.
+            {t('hero_subtitle')}
           </p>
 
           {/* GIANT DOMINANT CTA BUTTON */}
@@ -69,7 +69,7 @@ export const FarmerDashboard: React.FC<FarmerDashboardProps> = ({
               <div className="w-10 h-10 rounded-xl bg-white/20 flex items-center justify-center">
                 <Camera className="w-6 h-6 text-white" />
               </div>
-              <span className="tracking-wide">{t('start_diagnosis') || 'SCAN CROP'}</span>
+              <span className="tracking-wide">{t('scan_crop_cta')}</span>
             </button>
             <p className="text-xs text-[#795548] font-medium mt-2">
               Works directly with your phone camera or uploaded field photos • Official ICAR standards
@@ -101,7 +101,7 @@ export const FarmerDashboard: React.FC<FarmerDashboardProps> = ({
           <div className="flex items-center gap-2">
             <History className="w-5 h-5 text-[#2E7D32]" />
             <h2 className="text-xl font-bold text-[#4E342E]">
-              Recent Field Diagnoses
+              {t('recent_diagnoses')}
             </h2>
           </div>
           <span className="text-xs font-semibold text-[#795548]">
@@ -115,10 +115,10 @@ export const FarmerDashboard: React.FC<FarmerDashboardProps> = ({
               <Camera className="w-6 h-6" />
             </div>
             <h3 className="font-bold text-base text-[#4E342E]">
-              No Crop Diagnoses Yet
+              {t('no_reports_title')}
             </h3>
             <p className="text-xs text-[#795548] max-w-sm mx-auto">
-              Tap &ldquo;Scan Crop&rdquo; above to capture your first crop specimen. Your complete diagnostic history will be recorded here.
+              {t('no_reports_desc')}
             </p>
           </div>
         ) : (
@@ -190,7 +190,7 @@ export const FarmerDashboard: React.FC<FarmerDashboardProps> = ({
 
                   {!isReviewed && (
                     <div className="mt-3 pt-2 border-t border-[#E0D7C6] flex items-center justify-between text-xs text-[#795548]">
-                      <span>View Full Diagnostic Report</span>
+                      <span>{t('view_full_report')}</span>
                       <ChevronRight className="w-4 h-4 text-[#2E7D32] group-hover:translate-x-0.5 transition-transform" />
                     </div>
                   )}

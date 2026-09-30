@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import { RecommendationPlan } from '@/types';
+import { useLanguage } from '@/context/LanguageContext';
 import { ListOrdered, Leaf, FlaskConical, Shield, Search, Landmark, ExternalLink, CheckCircle2 } from 'lucide-react';
 
 interface DivisionActionPlanProps {
@@ -9,6 +10,7 @@ interface DivisionActionPlanProps {
 }
 
 export const DivisionActionPlan: React.FC<DivisionActionPlanProps> = ({ plan }) => {
+  const { t } = useLanguage();
   const [activeTab, setActiveTab] = useState<'plan' | 'organic' | 'chemical' | 'preventive' | 'monitoring' | 'gov'>('plan');
 
   return (
@@ -43,7 +45,7 @@ export const DivisionActionPlan: React.FC<DivisionActionPlanProps> = ({ plan }) 
           }`}
         >
           <ListOrdered className="w-3.5 h-3.5" />
-          <span>Immediate Action Plan</span>
+          <span>{t('immediate_action_plan')}</span>
         </button>
 
         <button
@@ -55,7 +57,7 @@ export const DivisionActionPlan: React.FC<DivisionActionPlanProps> = ({ plan }) 
           }`}
         >
           <Leaf className="w-3.5 h-3.5 text-[#81C784]" />
-          <span>Organic Solutions</span>
+          <span>{t('organic_solutions')}</span>
         </button>
 
         <button
@@ -67,7 +69,7 @@ export const DivisionActionPlan: React.FC<DivisionActionPlanProps> = ({ plan }) 
           }`}
         >
           <FlaskConical className="w-3.5 h-3.5 text-[#FFA000]" />
-          <span>Targeted Treatments</span>
+          <span>{t('chemical_treatments')}</span>
         </button>
 
         <button
@@ -79,7 +81,7 @@ export const DivisionActionPlan: React.FC<DivisionActionPlanProps> = ({ plan }) 
           }`}
         >
           <Shield className="w-3.5 h-3.5 text-[#2E7D32]" />
-          <span>Preventive Actions</span>
+          <span>{t('preventive_actions')}</span>
         </button>
 
         <button
@@ -91,7 +93,7 @@ export const DivisionActionPlan: React.FC<DivisionActionPlanProps> = ({ plan }) 
           }`}
         >
           <Landmark className="w-3.5 h-3.5" />
-          <span>Govt Agriculture Standards</span>
+          <span>{t('gov_standards_tab')}</span>
         </button>
 
         <button
@@ -103,7 +105,7 @@ export const DivisionActionPlan: React.FC<DivisionActionPlanProps> = ({ plan }) 
           }`}
         >
           <Search className="w-3.5 h-3.5 text-[#795548]" />
-          <span>Field Monitoring</span>
+          <span>{t('field_monitoring')}</span>
         </button>
       </div>
 

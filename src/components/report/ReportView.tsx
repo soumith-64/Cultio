@@ -12,6 +12,7 @@ import { ExpertNoteCard } from './ExpertNoteCard';
 import { DivisionHistoryInsights } from './DivisionHistoryInsights';
 import { DivisionComputerVision } from './DivisionComputerVision';
 import { Button } from '@/components/ui/Button';
+import { useLanguage } from '@/context/LanguageContext';
 import { ArrowLeft, Printer, Share2, Sparkles, CheckCircle2 } from 'lucide-react';
 
 interface ReportViewProps {
@@ -20,6 +21,7 @@ interface ReportViewProps {
 }
 
 export const ReportView: React.FC<ReportViewProps> = ({ initialReport, onBack }) => {
+  const { t } = useLanguage();
   const [report, setReport] = useState<CropReport>(initialReport);
   const [isEscalating, setIsEscalating] = useState<boolean>(false);
   const [justUpdated, setJustUpdated] = useState<boolean>(false);
@@ -69,7 +71,7 @@ export const ReportView: React.FC<ReportViewProps> = ({ initialReport, onBack })
           onClick={onBack}
           leftIcon={<ArrowLeft className="w-4 h-4" />}
         >
-          Back to Dashboard
+          {t('back_to_dashboard')}
         </Button>
 
         <div className="flex items-center gap-2">
@@ -80,7 +82,7 @@ export const ReportView: React.FC<ReportViewProps> = ({ initialReport, onBack })
             leftIcon={<Printer className="w-4 h-4" />}
             className="hidden sm:inline-flex text-xs"
           >
-            Print Report
+            {t('print_report')}
           </Button>
 
           <Button
@@ -101,7 +103,7 @@ export const ReportView: React.FC<ReportViewProps> = ({ initialReport, onBack })
             leftIcon={<Share2 className="w-4 h-4" />}
             className="text-xs"
           >
-            Share
+            {t('share_report')}
           </Button>
         </div>
       </div>
