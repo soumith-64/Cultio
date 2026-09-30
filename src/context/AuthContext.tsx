@@ -45,6 +45,7 @@ interface AuthContextType {
   ) => Promise<{ success: boolean; error?: string }>;
   sendPhoneOtp: (phoneNumber: string) => Promise<{ success: boolean; error?: string }>;
   verifyPhoneOtp: (code: string) => Promise<{ success: boolean; error?: string }>;
+  loginWithPhoneEmail: (userJsonUrl: string) => Promise<{ success: boolean; error?: string }>;
   selectRole: (role: UserRole) => Promise<void>;
   verifyAndElevateExpert: (keyOrId: string) => Promise<{ success: boolean; error?: string }>;
   updateUserProfile: (updates: Partial<UserProfile>) => Promise<void>;
@@ -419,6 +420,54 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  // Real Phone.Email Gateway OTP Verification & Authentication
+  const loginWithPhoneEmail = async (userJsonUrl: string): Promise<{ success: boolean; error?: string }> => {
+    setIsLoading(true);
+    try {
+      const res = await fetch('/api/auth/phone-verify', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ user_json_url: userJsonUrl }),
+      });
+
+      const data = await res.json();
+      if (!data.success) {
+        return { success: false, error: data.error || 'Phone OTP verification failed.' };
+      }
+
+      const isApproved = isApprovedExpertEmail(data.phone) || isApprovedExpertEmail(data.phoneNumber);
+      const assignedRole: UserRole = isApproved ? 'expert' : 'farmer';
+
+      const phoneProfile: UserProfile = {
+        uid: `phone_${data.phoneNumber || Date.now()}`,
+        email: null,
+        displayName: data.displayName || `Farmer ${data.phoneNumber ? data.phoneNumber.slice(-4) : 'User'}`,
+        photoURL: null,
+        phoneNumber: data.phone,
+        role: assignedRole,
+        isAccreditedExpert: isApproved,
+        createdAt: new Date().toISOString(),
+      };
+
+      if (isFirebaseConfigured && db) {
+        try {
+          await setDoc(doc(db, 'users', phoneProfile.uid), phoneProfile, { merge: true });
+        } catch (err) {
+          console.warn('[AuthContext] Firestore phone user write warning:', err);
+        }
+      }
+
+      persistUser(phoneProfile);
+      setShowAuthModal(false);
+      return { success: true };
+    } catch (err: any) {
+      console.error('[AuthContext] Phone login error:', err);
+      return { success: false, error: err.message || 'Phone verification failed.' };
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   // Only approved identities or accredited keys can act as experts
   const isApprovedExpert = Boolean(
     user && (
@@ -575,6 +624,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         signUpWithEmail,
         sendPhoneOtp,
         verifyPhoneOtp,
+        loginWithPhoneEmail,
         selectRole,
         verifyAndElevateExpert,
         updateUserProfile,

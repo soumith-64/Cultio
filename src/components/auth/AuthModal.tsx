@@ -4,7 +4,8 @@ import React, { useState } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { Button } from '@/components/ui/Button';
 import { UserRole } from '@/types';
-import { X, Mail, ShieldCheck, Lock, User, Briefcase, Award, Building, ArrowRight } from 'lucide-react';
+import { X, Mail, ShieldCheck, Lock, User, Briefcase, Award, Building, ArrowRight, CheckCircle2 } from 'lucide-react';
+import { PhoneEmailButton } from './PhoneEmailButton';
 
 interface AuthModalProps {
   initialRole?: UserRole;
@@ -17,6 +18,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ initialRole }) => {
     signInWithGoogle,
     signInWithEmail,
     signUpWithEmail,
+    loginWithPhoneEmail,
     isLoading,
   } = useAuth();
 
@@ -25,6 +27,8 @@ export const AuthModal: React.FC<AuthModalProps> = ({ initialRole }) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [displayName, setDisplayName] = useState('');
+  const [isVerifyingPhone, setIsVerifyingPhone] = useState(false);
+  const [phoneSuccessMsg, setPhoneSuccessMsg] = useState<string | null>(null);
   
   // Expert-specific registration fields
   const [specialization, setSpecialization] = useState('Plant Pathology & Crop Health');
@@ -45,6 +49,24 @@ export const AuthModal: React.FC<AuthModalProps> = ({ initialRole }) => {
     const res = await signInWithGoogle(role);
     if (!res.success && res.error) {
       setErrorMsg(res.error);
+    }
+  };
+
+  const handlePhoneSuccess = async (userJsonUrl: string) => {
+    setIsVerifyingPhone(true);
+    setErrorMsg(null);
+    setPhoneSuccessMsg('Phone verified! Fetching authenticated profile...');
+    try {
+      const res = await loginWithPhoneEmail(userJsonUrl);
+      if (!res.success && res.error) {
+        setErrorMsg(res.error);
+        setPhoneSuccessMsg(null);
+      }
+    } catch {
+      setErrorMsg('Failed to complete phone login. Please try again.');
+      setPhoneSuccessMsg(null);
+    } finally {
+      setIsVerifyingPhone(false);
     }
   };
 
@@ -94,7 +116,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ initialRole }) => {
         </button>
 
         {/* Modal Header */}
-        <div className="text-center mb-6">
+        <div className="text-center mb-5">
           <div className="w-12 h-12 bg-[#2E7D32]/10 text-[#2E7D32] rounded-2xl flex items-center justify-center mx-auto mb-3">
             <ShieldCheck className="w-6 h-6" />
           </div>
@@ -112,11 +134,45 @@ export const AuthModal: React.FC<AuthModalProps> = ({ initialRole }) => {
           </div>
         )}
 
+        {/* Phone.Email Instant OTP Sign In / Register */}
+        <div className="p-3.5 rounded-2xl bg-[#2E7D32]/5 border border-[#2E7D32]/20 mb-4 space-y-2">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-bold uppercase tracking-wider text-[#2E7D32] flex items-center gap-1.5">
+              <span>📱</span>
+              <span>Instant Mobile OTP</span>
+            </span>
+            <span className="text-[10px] font-bold uppercase px-2 py-0.5 rounded-full bg-[#2E7D32] text-white">
+              Recommended
+            </span>
+          </div>
+          <p className="text-[11px] text-[#795548] leading-tight">
+            Sign in or register directly using real WhatsApp or SMS OTP. No password needed.
+          </p>
+          <PhoneEmailButton
+            clientId="13311688567845248231"
+            onSuccess={handlePhoneSuccess}
+            disabled={isLoading || isVerifyingPhone}
+          />
+          {phoneSuccessMsg && (
+            <div className="p-2.5 rounded-xl bg-[#2E7D32]/15 border border-[#2E7D32]/30 text-[#2E7D32] text-xs font-bold flex items-center gap-1.5 animate-fadeIn">
+              <CheckCircle2 className="w-4 h-4 text-[#2E7D32]" />
+              <span>{phoneSuccessMsg}</span>
+            </div>
+          )}
+        </div>
+
+        <div className="relative my-3 flex items-center justify-center">
+          <div className="border-t border-[#E0D7C6] w-full" />
+          <span className="bg-[#FFFFFF] px-3 text-[10px] uppercase tracking-wider text-[#795548] font-bold">
+            Or with Google
+          </span>
+        </div>
+
         {/* Primary Google Auth */}
         <button
           onClick={handleGoogleAuth}
-          disabled={isLoading}
-          className="w-full flex items-center justify-center gap-3 py-3 px-4 rounded-xl border border-[#E0D7C6] bg-[#FFFFFF] hover:bg-[#F9F6F0] text-[#4E342E] font-semibold text-sm shadow-2xs transition-all cursor-pointer min-h-[46px]"
+          disabled={isLoading || isVerifyingPhone}
+          className="w-full flex items-center justify-center gap-3 py-2.5 px-4 rounded-xl border border-[#E0D7C6] bg-[#FFFFFF] hover:bg-[#F9F6F0] text-[#4E342E] font-semibold text-xs shadow-2xs transition-all cursor-pointer min-h-[42px]"
         >
           <svg className="w-4 h-4" viewBox="0 0 24 24">
             <path
@@ -139,10 +195,10 @@ export const AuthModal: React.FC<AuthModalProps> = ({ initialRole }) => {
           <span>Continue with Google</span>
         </button>
 
-        <div className="relative my-4 flex items-center justify-center">
+        <div className="relative my-3 flex items-center justify-center">
           <div className="border-t border-[#E0D7C6] w-full" />
-          <span className="bg-[#FFFFFF] px-3 text-[11px] uppercase tracking-wider text-[#795548] font-bold">
-            Or with email
+          <span className="bg-[#FFFFFF] px-3 text-[10px] uppercase tracking-wider text-[#795548] font-bold">
+            Or with email & password
           </span>
         </div>
 
