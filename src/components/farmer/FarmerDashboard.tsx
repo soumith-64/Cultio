@@ -4,6 +4,7 @@ import React from 'react';
 import { CropReport } from '@/types';
 import { SeverityBadge, StatusBadge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
+import { useLanguage } from '@/context/LanguageContext';
 import {
   Camera,
   MapPin,
@@ -14,6 +15,7 @@ import {
   ChevronRight,
   History,
   AlertCircle,
+  Landmark,
 } from 'lucide-react';
 
 interface FarmerDashboardProps {
@@ -29,6 +31,7 @@ export const FarmerDashboard: React.FC<FarmerDashboardProps> = ({
   onSelectReport,
   isProcessing = false,
 }) => {
+  const { t } = useLanguage();
   const pendingExpertCount = reports.filter(
     (r) => r.status === 'PENDING_EXPERT'
   ).length;
@@ -66,10 +69,10 @@ export const FarmerDashboard: React.FC<FarmerDashboardProps> = ({
               <div className="w-10 h-10 rounded-xl bg-white/20 flex items-center justify-center">
                 <Camera className="w-6 h-6 text-white" />
               </div>
-              <span className="tracking-wide">SCAN CROP</span>
+              <span className="tracking-wide">{t('start_diagnosis') || 'SCAN CROP'}</span>
             </button>
             <p className="text-xs text-[#795548] font-medium mt-2">
-              Works directly with your phone camera or uploaded field photos
+              Works directly with your phone camera or uploaded field photos • Official ICAR standards
             </p>
           </div>
         </div>

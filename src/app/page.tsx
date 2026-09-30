@@ -33,8 +33,10 @@ import { getSoilService } from '@/services/soil';
 import { getDiagnosticService } from '@/services/gemini';
 import { getRecommendationService } from '@/services/recommendations';
 import { ComputerVisionService } from '@/services/cvAnalysis';
+import { useLanguage } from '@/context/LanguageContext';
 
 function CultivoApp() {
+  const { language } = useLanguage();
   const {
     user,
     isAuthenticated,
@@ -97,16 +99,23 @@ function CultivoApp() {
     file,
     base64,
     previewUrl,
+    farmerNotes,
   }: {
     file?: File;
     base64: string;
     previewUrl: string;
+    farmerNotes?: string;
   }) => {
     setIsProcessing(true);
 
     // Initial pipeline state
     const initialSteps: PipelineProgressStep[] = [
-      { id: 'capture', label: 'Crop photograph captured', state: 'completed', detail: 'Live foliar specimen validated' },
+      {
+        id: 'capture',
+        label: 'Crop photograph & farmer input captured',
+        state: 'completed',
+        detail: farmerNotes ? 'Specimen + Farmer observation validated' : 'Live foliar specimen validated',
+      },
       { id: 'upload', label: 'Secure image storage', state: 'active', detail: 'Uploading to encrypted storage' },
       { id: 'cv_analysis', label: 'Computer Vision lesion segmentation', state: 'active', detail: 'Mathematical pixel & ExG index analysis' },
       { id: 'geolocation', label: 'Field coordinates acquisition', state: 'pending', detail: 'Requesting GPS sensors' },
@@ -256,6 +265,8 @@ function CultivoApp() {
       const diagnosis: Diagnosis = await diagnosticService.diagnoseCrop({
         image_url: storedImageUrl,
         image_base64: base64,
+        farmer_notes: farmerNotes,
+        preferred_language: language,
         weather: weatherData,
         soil: soilData,
         location: locationData,

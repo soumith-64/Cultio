@@ -9,6 +9,8 @@ export interface DiagnosticRequestPayload {
   image_url?: string;
   image_base64?: string;
   mime_type?: string;
+  farmer_notes?: string;
+  preferred_language?: string;
   weather: WeatherData;
   soil: SoilData;
   location: LocationData;

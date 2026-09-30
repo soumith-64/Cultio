@@ -85,6 +85,14 @@ export interface DifferentialDiagnosis {
   rationale: string;
 }
 
+export interface GovernmentGuideline {
+  authority: string; // e.g. "ICAR & CIBRC (Govt of India)" or "National Extension Service"
+  advisory_title: string;
+  standard_practice: string;
+  approved_formulations?: string[];
+  official_portal_url: string;
+}
+
 export interface Diagnosis {
   plant_type: string;
   disease_name: string;
@@ -97,6 +105,10 @@ export interface Diagnosis {
   differential_diagnoses?: DifferentialDiagnosis[];
   root_cause_analysis: string;
   recommended_next_steps?: string[];
+  farmer_notes?: string;
+  translated_notes?: string;
+  detected_language?: string;
+  government_guideline?: GovernmentGuideline;
 }
 
 export interface RecommendationPlan {

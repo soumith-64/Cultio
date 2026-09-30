@@ -7,6 +7,8 @@ import Link from 'next/link';
 import { Sprout, ShieldCheck, User, LogOut, ArrowLeftRight, Cloud } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { UserProfileModal } from '@/components/auth/UserProfileModal';
+import { LanguageSelector } from '@/components/layout/LanguageSelector';
+import { useLanguage } from '@/context/LanguageContext';
 
 interface NavbarProps {
   currentView: 'farmer' | 'expert' | 'landing' | 'scan' | 'report';
@@ -15,6 +17,7 @@ interface NavbarProps {
 
 export const Navbar: React.FC<NavbarProps> = ({ currentView, onNavigate }) => {
   const { user, isAuthenticated, signOut, setShowAuthModal, selectRole } = useAuth();
+  const { t } = useLanguage();
   const [showProfileModal, setShowProfileModal] = useState(false);
 
   return (
@@ -45,6 +48,9 @@ export const Navbar: React.FC<NavbarProps> = ({ currentView, onNavigate }) => {
 
         {/* Center / Role Navigation */}
         <div className="flex items-center gap-2">
+          {/* In-App Language Selector */}
+          <LanguageSelector />
+
           <div className="flex items-center bg-[#F9F6F0] p-1 rounded-xl border border-[#E0D7C6]">
             <button
               onClick={() => {
@@ -59,7 +65,7 @@ export const Navbar: React.FC<NavbarProps> = ({ currentView, onNavigate }) => {
               title="Farmer Diagnostic Workspace"
             >
               <Sprout className="w-3.5 h-3.5" />
-              <span className="hidden xs:inline">Farmer Portal</span>
+              <span className="hidden xs:inline">{t('farmer_portal')}</span>
             </button>
 
             <Link
@@ -68,7 +74,7 @@ export const Navbar: React.FC<NavbarProps> = ({ currentView, onNavigate }) => {
               title="Open Dedicated Expert Agronomist Portal"
             >
               <ShieldCheck className="w-3.5 h-3.5 text-[#2E7D32]" />
-              <span className="hidden xs:inline">Expert Portal</span>
+              <span className="hidden xs:inline">{t('expert_portal')}</span>
             </Link>
           </div>
 
@@ -82,7 +88,7 @@ export const Navbar: React.FC<NavbarProps> = ({ currentView, onNavigate }) => {
             }
           >
             <Cloud className="w-3 h-3 text-[#2E7D32]" />
-            <span>{isFirebaseConfigured ? 'Live Cloud Sync' : 'Local Real-Time'}</span>
+            <span>{isFirebaseConfigured ? t('live_cloud_sync') : 'Local Live'}</span>
           </div>
 
           {/* User Profile / Auth Action */}

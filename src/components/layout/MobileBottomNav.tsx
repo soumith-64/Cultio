@@ -3,6 +3,7 @@
 import React from 'react';
 import Link from 'next/link';
 import { useAuth } from '@/context/AuthContext';
+import { useLanguage } from '@/context/LanguageContext';
 import {
   Sprout,
   Camera,
@@ -25,6 +26,7 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({
   onOpenProfile,
 }) => {
   const { user, isAuthenticated, setShowAuthModal } = useAuth();
+  const { t } = useLanguage();
 
   return (
     <nav
@@ -42,7 +44,7 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({
           }`}
         >
           <Sprout className="w-5 h-5 mb-0.5" />
-          <span className="text-[10px] tracking-tight">Plots</span>
+          <span className="text-[10px] tracking-tight">{t('plots')}</span>
         </button>
 
         {/* Center Elevate Action: Live Field Scan */}
@@ -56,7 +58,7 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({
             <Camera className="w-6 h-6 text-white" />
           </div>
           <span className="text-[10px] font-extrabold text-[#2E7D32] mt-0.5 tracking-tight">
-            AI Scan
+            {t('ai_scan')}
           </span>
         </button>
 
@@ -98,7 +100,7 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({
             )}
           </div>
           <span className="text-[10px] tracking-tight font-medium">
-            {isAuthenticated ? 'Profile' : 'Sign In'}
+            {isAuthenticated ? t('profile') : t('sign_in')}
           </span>
         </button>
       </div>

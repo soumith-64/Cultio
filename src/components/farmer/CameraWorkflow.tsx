@@ -3,6 +3,7 @@
 import React, { useRef, useState } from 'react';
 import { Button } from '@/components/ui/Button';
 import { ImageStorageService } from '@/services/storage';
+import { useLanguage } from '@/context/LanguageContext';
 import {
   Camera,
   Upload,
@@ -14,10 +15,17 @@ import {
   Maximize2,
   ShieldCheck,
   Sparkles,
+  MessageSquareText,
+  Globe,
 } from 'lucide-react';
 
 interface CameraWorkflowProps {
-  onImageConfirmed: (imageData: { file?: File; base64: string; previewUrl: string }) => void;
+  onImageConfirmed: (imageData: {
+    file?: File;
+    base64: string;
+    previewUrl: string;
+    farmerNotes?: string;
+  }) => void;
   onCancel: () => void;
   isProcessing?: boolean;
 }
@@ -27,12 +35,14 @@ export const CameraWorkflow: React.FC<CameraWorkflowProps> = ({
   onCancel,
   isProcessing = false,
 }) => {
+  const { t } = useLanguage();
   const cameraInputRef = useRef<HTMLInputElement>(null);
   const galleryInputRef = useRef<HTMLInputElement>(null);
 
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [base64Data, setBase64Data] = useState<string | null>(null);
+  const [farmerNotes, setFarmerNotes] = useState<string>('');
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [isCompressing, setIsCompressing] = useState<boolean>(false);
 
@@ -70,6 +80,7 @@ export const CameraWorkflow: React.FC<CameraWorkflowProps> = ({
       file: selectedFile || undefined,
       base64: base64Data,
       previewUrl,
+      farmerNotes: farmerNotes.trim() || undefined,
     });
   };
 
@@ -77,6 +88,7 @@ export const CameraWorkflow: React.FC<CameraWorkflowProps> = ({
     setPreviewUrl(null);
     setSelectedFile(null);
     setBase64Data(null);
+    setFarmerNotes('');
     setErrorMsg(null);
     if (cameraInputRef.current) cameraInputRef.current.value = '';
     if (galleryInputRef.current) galleryInputRef.current.value = '';
@@ -148,6 +160,73 @@ export const CameraWorkflow: React.FC<CameraWorkflowProps> = ({
             <div className="absolute bottom-2 left-2 right-2 bg-black/65 backdrop-blur-sm text-white px-3 py-1.5 rounded-lg text-xs flex items-center justify-between">
               <span>Ready for Real-Time Analysis</span>
               <span className="text-[#81C784] font-semibold">Live Specimen</span>
+            </div>
+          </div>
+
+          {/* Multilingual Farmer Problem Description Input */}
+          <div className="bg-[#F9F6F0] p-4 rounded-2xl border border-[#E0D7C6] space-y-2.5">
+            <div className="flex items-center justify-between">
+              <label
+                htmlFor="farmer-notes-textarea"
+                className="text-xs font-bold uppercase tracking-wider text-[#4E342E] flex items-center gap-1.5"
+              >
+                <MessageSquareText className="w-3.5 h-3.5 text-[#2E7D32]" />
+                <span>{t('farmer_notes_label') || 'Describe crop issue (in any language)'}</span>
+              </label>
+              <span className="text-[10px] font-bold text-[#2E7D32] bg-[#81C784]/20 px-2 py-0.5 rounded-full flex items-center gap-1">
+                <Globe className="w-3 h-3" />
+                <span>AI Auto-Translates</span>
+              </span>
+            </div>
+
+            <textarea
+              id="farmer-notes-textarea"
+              rows={2}
+              value={farmerNotes}
+              onChange={(e) => setFarmerNotes(e.target.value)}
+              disabled={isProcessing}
+              placeholder={
+                t('farmer_notes_placeholder') ||
+                'Type in any language (Hindi, Telugu, Tamil, Marathi, Bengali, Spanish, English, etc.). The AI will translate and incorporate your observations.'
+              }
+              className="w-full text-xs sm:text-sm p-3 rounded-xl border border-[#E0D7C6] bg-white text-[#4E342E] placeholder-[#A1887F] focus:outline-none focus:ring-2 focus:ring-[#2E7D32] resize-none leading-relaxed"
+            />
+
+            <div className="flex flex-wrap items-center gap-1.5 text-[11px] text-[#795548]">
+              <span className="font-semibold text-[#4E342E]">Quick tags:</span>
+              <button
+                type="button"
+                onClick={() =>
+                  setFarmerNotes((prev) =>
+                    prev ? `${prev} • काले धब्बे (Black spots)` : 'पत्तियों पर काले धब्बे दिख रहे हैं (Black spots on leaves)'
+                  )
+                }
+                className="bg-white border border-[#E0D7C6] px-2 py-0.5 rounded-md hover:bg-[#EFE8DC] transition-colors cursor-pointer text-[#4E342E]"
+              >
+                + काले धब्बे
+              </button>
+              <button
+                type="button"
+                onClick={() =>
+                  setFarmerNotes((prev) =>
+                    prev ? `${prev} • ఆకులు పసుపు (Yellowing)` : 'ఆకులు పసుపు రంగులోకి మారుతున్నాయి (Leaves turning yellow)'
+                  )
+                }
+                className="bg-white border border-[#E0D7C6] px-2 py-0.5 rounded-md hover:bg-[#EFE8DC] transition-colors cursor-pointer text-[#4E342E]"
+              >
+                + ఆకులు పసుపు
+              </button>
+              <button
+                type="button"
+                onClick={() =>
+                  setFarmerNotes((prev) =>
+                    prev ? `${prev} • இலையில் சுருக்கம் (Leaf curl)` : 'இலை சுருண்டு போகிறது (Leaf curling)'
+                  )
+                }
+                className="bg-white border border-[#E0D7C6] px-2 py-0.5 rounded-md hover:bg-[#EFE8DC] transition-colors cursor-pointer text-[#4E342E]"
+              >
+                + இலை சுருக்கம்
+              </button>
             </div>
           </div>
 
