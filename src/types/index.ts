@@ -43,12 +43,22 @@ export interface LocationData {
   regionName?: string;
 }
 
+export interface WaterData {
+  soil_moisture_root_zone_percent: number; // e.g. 14.2%
+  soil_moisture_surface_percent: number; // e.g. 11.5%
+  precipitation_24h_mm: number; // e.g. 7.3 mm
+  evapotranspiration_mm: number; // e.g. 5.6 mm/day
+  water_stress_status: 'Optimal' | 'Moisture Deficit' | 'Saturated / Waterlogged';
+  irrigation_advice: string;
+}
+
 export interface WeatherData {
   temp: number; // Celsius
   humidity: number; // Percentage
   pressure: number; // hPa
   condition?: string;
   isMock: boolean;
+  water?: WaterData;
 }
 
 export interface SoilData {
@@ -62,6 +72,7 @@ export interface SoilData {
 export interface EnvironmentData {
   weather: WeatherData;
   soil: SoilData;
+  water?: WaterData;
 }
 
 export type ConfidenceLevel = 'High' | 'Moderate' | 'Low';
