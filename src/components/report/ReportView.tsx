@@ -10,6 +10,7 @@ import { DivisionActionPlan } from './DivisionActionPlan';
 import { DivisionEscalation } from './DivisionEscalation';
 import { ExpertNoteCard } from './ExpertNoteCard';
 import { DivisionHistoryInsights } from './DivisionHistoryInsights';
+import { DivisionComputerVision } from './DivisionComputerVision';
 import { Button } from '@/components/ui/Button';
 import { ArrowLeft, Printer, Share2, Sparkles, CheckCircle2 } from 'lucide-react';
 
@@ -133,6 +134,14 @@ export const ReportView: React.FC<ReportViewProps> = ({ initialReport, onBack })
       {/* HISTORICAL FIELD INTELLIGENCE & LONGITUDINAL SUGGESTIONS */}
       {report.historical_insight && (
         <DivisionHistoryInsights insight={report.historical_insight} />
+      )}
+
+      {/* COMPUTER VISION FOLIAR ANALYTICS & LESION SEGMENTATION */}
+      {report.cv_metrics && (
+        <DivisionComputerVision
+          metrics={report.cv_metrics}
+          originalImageUrl={report.image_url}
+        />
       )}
 
       {/* DIVISION 2: ENVIRONMENTAL CONTEXT */}

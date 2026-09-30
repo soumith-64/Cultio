@@ -115,6 +115,27 @@ export const DivisionHistoryInsights: React.FC<DivisionHistoryInsightsProps> = (
             <div>
               Prior Severity Baseline: <strong>{insight.previous_severity || 'Recorded'}</strong>
             </div>
+            {typeof insight.lesion_area_change_percent === 'number' && (
+              <div className="pt-1 font-semibold">
+                Lesion Spread Delta:{' '}
+                <span
+                  className={
+                    insight.lesion_area_change_percent > 0
+                      ? 'text-[#D32F2F]'
+                      : 'text-[#2E7D32]'
+                  }
+                >
+                  {insight.lesion_area_change_percent > 0 ? '+' : ''}
+                  {insight.lesion_area_change_percent}%{' '}
+                  {insight.lesion_area_change_percent > 0 ? '(Expansion)' : '(Recovery)'}
+                </span>
+                {typeof insight.previous_lesion_percent === 'number' && (
+                  <span className="text-[10px] text-[#795548] ml-1">
+                    (was {insight.previous_lesion_percent}%)
+                  </span>
+                )}
+              </div>
+            )}
           </div>
         </div>
 

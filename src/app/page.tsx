@@ -30,6 +30,7 @@ import { getWeatherService } from '@/services/weather';
 import { getSoilService } from '@/services/soil';
 import { getDiagnosticService } from '@/services/gemini';
 import { getRecommendationService } from '@/services/recommendations';
+import { ComputerVisionService } from '@/services/cvAnalysis';
 
 function CultivoApp() {
   const {
@@ -102,8 +103,9 @@ function CultivoApp() {
 
     // Initial pipeline state
     const initialSteps: PipelineProgressStep[] = [
-      { id: 'capture', label: 'Crop photograph captured', state: 'completed', detail: 'Foliar image optimized (1600px)' },
+      { id: 'capture', label: 'Crop photograph captured', state: 'completed', detail: 'Live foliar specimen validated' },
       { id: 'upload', label: 'Secure image storage', state: 'active', detail: 'Uploading to encrypted storage' },
+      { id: 'cv_analysis', label: 'Computer Vision lesion segmentation', state: 'active', detail: 'Mathematical pixel & ExG index analysis' },
       { id: 'geolocation', label: 'Field coordinates acquisition', state: 'pending', detail: 'Requesting GPS sensors' },
       { id: 'weather', label: 'Microclimatic telemetry', state: 'pending', detail: 'Temperature, humidity & pressure' },
       { id: 'soil', label: 'Soil horizon intelligence', state: 'pending', detail: 'Soil taxonomy & pH reading' },
@@ -113,16 +115,16 @@ function CultivoApp() {
     ];
 
     setPipelineSteps(initialSteps);
-    setPipelineCurrentLabel('Uploading image and initializing parallel telemetry...');
+    setPipelineCurrentLabel('Analyzing foliar pixels with Computer Vision and acquiring telemetry...');
 
     try {
       const userId = user?.uid || 'guest_farmer';
       let imageUrl = previewUrl;
 
-      // PARALLEL EXECUTION: Operation A (Image Upload) + Operation B (GPS Request)
+      // PARALLEL EXECUTION: Operation A (Image Upload) + Operation B (GPS Request) + Operation C (Computer Vision)
       setPipelineSteps((prev) =>
         prev.map((s) =>
-          s.id === 'upload' || s.id === 'geolocation'
+          s.id === 'upload' || s.id === 'geolocation' || s.id === 'cv_analysis'
             ? { ...s, state: 'active' }
             : s
         )
@@ -163,9 +165,27 @@ function CultivoApp() {
         return geoResult.data;
       })();
 
-      const [storedImageUrl, locationData] = await Promise.all([
+      // C: Computer Vision Foliar Segmentation & ExG Index
+      const cvPromise = (async () => {
+        const metrics = await ComputerVisionService.analyzeImage(previewUrl);
+        setPipelineSteps((prev) =>
+          prev.map((s) =>
+            s.id === 'cv_analysis'
+              ? {
+                  ...s,
+                  state: 'completed',
+                  detail: `${metrics.lesion_surface_area_percent}% lesion area • ExG Index ${metrics.chlorophyll_health_index}`,
+                }
+              : s
+          )
+        );
+        return metrics;
+      })();
+
+      const [storedImageUrl, locationData, cvMetrics] = await Promise.all([
         uploadPromise,
         locationPromise,
+        cvPromise,
       ]);
 
       // PARALLEL EXECUTION: Operation C (Weather) + Operation D (Soil)
@@ -267,13 +287,14 @@ function CultivoApp() {
           diagnosis.severity
         );
 
-      // Compute longitudinal suggestions from stored previous analyses
+      // Compute longitudinal suggestions from stored previous analyses (comparing lesion area %)
       const historicalInsight = ReportsService.computeHistoricalInsights(
         diagnosis.plant_type,
         diagnosis.disease_name,
         diagnosis.severity,
         weatherData.humidity,
-        reports
+        reports,
+        cvMetrics.lesion_surface_area_percent
       );
 
       setPipelineSteps((prev) =>
@@ -283,7 +304,7 @@ function CultivoApp() {
                 ...s,
                 state: 'completed',
                 detail: historicalInsight.has_previous_data
-                  ? `Historical trend analyzed (${historicalInsight.previous_analyses_count} prior scans) with continuity suggestions`
+                  ? `Historical trend analyzed (${historicalInsight.previous_analyses_count} prior scans, ${cvMetrics.lesion_surface_area_percent}% lesion area) with continuity suggestions`
                   : `${recommendations.ordered_action_plan.length} sequential execution steps synthesized`,
               }
             : s
@@ -314,6 +335,7 @@ function CultivoApp() {
         diagnosis,
         recommendations,
         historical_insight: historicalInsight,
+        cv_metrics: cvMetrics,
       };
 
       await ReportsService.createReport(newReport);

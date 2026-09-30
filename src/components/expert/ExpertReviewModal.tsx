@@ -191,6 +191,37 @@ export const ExpertReviewModal: React.FC<ExpertReviewModalProps> = ({
                   Soil Horizon: <strong>{env.soil.soil_type}</strong>
                 </div>
               </div>
+
+              {/* Computer Vision Lesion Metrics for Expert Inspection */}
+              {report.cv_metrics && (
+                <div className="bg-white p-3.5 rounded-2xl border border-[#E0D7C6] text-xs space-y-2 shadow-sm">
+                  <div className="flex items-center justify-between font-bold text-[#4E342E]">
+                    <span>Computer Vision Lesion Area:</span>
+                    <span className="text-[#D32F2F] text-sm font-black">
+                      {report.cv_metrics.lesion_surface_area_percent}% Affected
+                    </span>
+                  </div>
+                  <div className="w-full bg-[#E0D7C6] h-2.5 rounded-full overflow-hidden flex">
+                    <div
+                      style={{ width: `${report.cv_metrics.healthy_canopy_percent}%` }}
+                      className="bg-[#2E7D32] h-full"
+                    />
+                    <div
+                      style={{ width: `${report.cv_metrics.color_distribution.chlorotic_yellow}%` }}
+                      className="bg-[#FFA000] h-full"
+                    />
+                    <div
+                      style={{ width: `${report.cv_metrics.color_distribution.necrotic_brown}%` }}
+                      className="bg-[#D32F2F] h-full"
+                    />
+                  </div>
+                  <div className="flex justify-between text-[11px] text-[#795548] pt-0.5">
+                    <span>ExG Index: {report.cv_metrics.chlorophyll_health_index > 0 ? `+${report.cv_metrics.chlorophyll_health_index}` : report.cv_metrics.chlorophyll_health_index}</span>
+                    <span>Healthy Tissue: {report.cv_metrics.color_distribution.healthy_green}%</span>
+                    <span>Necrosis: {report.cv_metrics.color_distribution.necrotic_brown}%</span>
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* RIGHT COLUMN: AI Baseline Diagnosis & Review Input */}

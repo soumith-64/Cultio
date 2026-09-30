@@ -92,11 +92,26 @@ export interface ExpertReview {
   reviewed_at: string;
 }
 
+export interface ComputerVisionMetrics {
+  lesion_surface_area_percent: number; // e.g. 18.5%
+  healthy_canopy_percent: number;      // e.g. 81.5%
+  chlorophyll_health_index: number;    // e.g. 0.72 (range -1.0 to 1.0)
+  color_distribution: {
+    healthy_green: number; // %
+    chlorotic_yellow: number; // %
+    necrotic_brown: number; // %
+  };
+  detected_lesion_clusters: number;
+  annotated_overlay_url?: string;
+}
+
 export interface HistoricalInsight {
   has_previous_data: boolean;
   previous_analyses_count: number;
   last_analyzed_date?: string;
   previous_severity?: Severity;
+  previous_lesion_percent?: number;
+  lesion_area_change_percent?: number;
   severity_trend?: 'improving' | 'deteriorating' | 'stable' | 'new_crop';
   pathogen_recurrence_alert?: string;
   treatment_continuity_suggestion?: string;
@@ -118,11 +133,13 @@ export interface CropReport {
   recommendations?: RecommendationPlan;
   expert_review?: ExpertReview;
   historical_insight?: HistoricalInsight;
+  cv_metrics?: ComputerVisionMetrics;
 }
 
 export type PipelineStepId =
   | 'capture'
   | 'upload'
+  | 'cv_analysis'
   | 'geolocation'
   | 'weather'
   | 'soil'

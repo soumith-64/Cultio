@@ -304,7 +304,8 @@ export class ReportsService {
     currentDiseaseName: string,
     currentSeverity: Severity,
     currentHumidity: number,
-    previousReports: CropReport[]
+    previousReports: CropReport[],
+    currentLesionPercent?: number
   ): HistoricalInsight {
     if (!previousReports || previousReports.length === 0) {
       return {
@@ -331,6 +332,12 @@ export class ReportsService {
     const mostRecent = relevantPast[0];
     const pastSeverity = mostRecent.diagnosis?.severity || 'LOW';
     const pastDisease = mostRecent.diagnosis?.disease_name || 'Previous Stress';
+    const pastLesionPercent = mostRecent.cv_metrics?.lesion_surface_area_percent;
+
+    let lesionAreaChange: number | undefined;
+    if (typeof currentLesionPercent === 'number' && typeof pastLesionPercent === 'number') {
+      lesionAreaChange = Number((currentLesionPercent - pastLesionPercent).toFixed(1));
+    }
 
     // Calculate severity trend
     const severityRanks: Record<Severity, number> = {
@@ -344,8 +351,11 @@ export class ReportsService {
     const pastRank = severityRanks[pastSeverity] || 1;
 
     let severity_trend: 'improving' | 'deteriorating' | 'stable' | 'new_crop' = 'stable';
-    if (currentRank > pastRank) severity_trend = 'deteriorating';
-    else if (currentRank < pastRank) severity_trend = 'improving';
+    if (currentRank > pastRank || (lesionAreaChange && lesionAreaChange > 4)) {
+      severity_trend = 'deteriorating';
+    } else if (currentRank < pastRank || (lesionAreaChange && lesionAreaChange < -4)) {
+      severity_trend = 'improving';
+    }
 
     // Recurrence analysis
     const isSamePathogen =
@@ -389,6 +399,8 @@ export class ReportsService {
       previous_analyses_count: relevantPast.length,
       last_analyzed_date: mostRecent.created_at,
       previous_severity: pastSeverity,
+      previous_lesion_percent: pastLesionPercent,
+      lesion_area_change_percent: lesionAreaChange,
       severity_trend,
       pathogen_recurrence_alert: recurrence_alert,
       treatment_continuity_suggestion: treatment_suggestion,
