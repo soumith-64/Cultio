@@ -1,17 +1,23 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { useAuth } from '@/context/AuthContext';
 import { Sprout, ShieldCheck, Check, Lock, ArrowRight } from 'lucide-react';
 
 export const RoleModal: React.FC = () => {
   const { showRoleModal, selectRole, isApprovedExpert, verifyAndElevateExpert } = useAuth();
+  const [mounted, setMounted] = useState(false);
   const [showKeyPrompt, setShowKeyPrompt] = useState(false);
   const [keyInput, setKeyInput] = useState('');
   const [keyError, setKeyError] = useState<string | null>(null);
   const [isVerifying, setIsVerifying] = useState(false);
 
-  if (!showRoleModal) return null;
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  if (!showRoleModal || !mounted) return null;
 
   const handleSelectExpert = async () => {
     if (isApprovedExpert) {
@@ -36,9 +42,9 @@ export const RoleModal: React.FC = () => {
     }
   };
 
-  return (
+  return createPortal(
     <div
-      className="fixed inset-0 z-50 overflow-y-auto bg-[#4E342E]/60 backdrop-blur-sm p-3 sm:p-6 animate-fadeIn"
+      className="fixed inset-0 z-[99999] overflow-y-auto bg-[#4E342E]/60 backdrop-blur-sm p-3 sm:p-6 animate-fadeIn"
       role="dialog"
       aria-modal="true"
       aria-labelledby="role-modal-title"
@@ -138,6 +144,7 @@ export const RoleModal: React.FC = () => {
           </div>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 };

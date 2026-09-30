@@ -1,6 +1,7 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { CropReport, ExpertReview } from '@/types';
 import { ReportsService } from '@/services/reports';
 import { useAuth } from '@/context/AuthContext';
@@ -33,6 +34,7 @@ export const ExpertReviewModal: React.FC<ExpertReviewModalProps> = ({
   onReviewSubmitted,
 }) => {
   const { user } = useAuth();
+  const [mounted, setMounted] = useState(false);
 
   const [assessment, setAssessment] = useState(
     report.expert_review?.assessment || ''
@@ -108,9 +110,15 @@ export const ExpertReviewModal: React.FC<ExpertReviewModalProps> = ({
     }
   };
 
-  return (
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  if (!mounted) return null;
+
+  return createPortal(
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-[#4E342E]/70 backdrop-blur-sm overflow-y-auto animate-fadeIn"
+      className="fixed inset-0 z-[99999] flex items-center justify-center p-3 sm:p-6 bg-[#4E342E]/70 backdrop-blur-sm overflow-y-auto animate-fadeIn"
       role="dialog"
       aria-modal="true"
     >
@@ -331,6 +339,7 @@ export const ExpertReviewModal: React.FC<ExpertReviewModalProps> = ({
           </div>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 };

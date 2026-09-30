@@ -1,6 +1,7 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { useAuth } from '@/context/AuthContext';
 import { isFirebaseConfigured } from '@/config/firebase';
 import { useLanguage } from '@/context/LanguageContext';
@@ -28,12 +29,17 @@ interface UserProfileModalProps {
 export const UserProfileModal: React.FC<UserProfileModalProps> = ({ isOpen, onClose }) => {
   const { user, signOut, selectRole, isApprovedExpert, verifyAndElevateExpert } = useAuth();
   const { t } = useLanguage();
+  const [mounted, setMounted] = useState(false);
   const [showVerification, setShowVerification] = useState(false);
   const [accessKey, setAccessKey] = useState('');
   const [isVerifying, setIsVerifying] = useState(false);
   const [verificationError, setVerificationError] = useState<string | null>(null);
 
-  if (!isOpen || !user) return null;
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  if (!isOpen || !user || !mounted) return null;
 
   const isExpert = user.role === 'expert' && isApprovedExpert;
 
@@ -67,9 +73,9 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({ isOpen, onCl
     }
   };
 
-  return (
+  return createPortal(
     <div
-      className="fixed inset-0 z-50 overflow-y-auto bg-black/60 backdrop-blur-sm p-3 sm:p-6 animate-fadeIn"
+      className="fixed inset-0 z-[99999] overflow-y-auto bg-black/60 backdrop-blur-sm p-3 sm:p-6 animate-fadeIn"
       role="dialog"
       aria-modal="true"
       aria-labelledby="profile-modal-title"
@@ -77,7 +83,7 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({ isOpen, onCl
     >
       <div className="flex min-h-full items-center justify-center py-6 text-center">
         <div
-          className="w-full max-w-md bg-white rounded-3xl shadow-earth-xl border border-[#E0D7C6] overflow-hidden flex flex-col my-auto text-left relative"
+          className="w-full max-w-md bg-white rounded-3xl shadow-earth-xl border border-[#E0D7C6] overflow-hidden flex flex-col my-auto text-left relative z-[100000]"
           onClick={(e) => e.stopPropagation()}
         >
           {/* Header Banner - Compact and always in view */}
@@ -231,6 +237,7 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({ isOpen, onCl
           </div>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 };

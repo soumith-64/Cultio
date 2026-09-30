@@ -388,6 +388,7 @@ function CultivoApp() {
           setActiveReport(null);
           setCurrentView(view);
         }}
+        onOpenProfile={() => setShowProfileModal(true)}
       />
 
       {/* Main Content Area */}

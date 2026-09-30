@@ -13,12 +13,21 @@ import { useLanguage } from '@/context/LanguageContext';
 interface NavbarProps {
   currentView: 'farmer' | 'expert' | 'landing' | 'scan' | 'report';
   onNavigate: (view: 'farmer' | 'expert' | 'landing') => void;
+  onOpenProfile?: () => void;
 }
 
-export const Navbar: React.FC<NavbarProps> = ({ currentView, onNavigate }) => {
+export const Navbar: React.FC<NavbarProps> = ({ currentView, onNavigate, onOpenProfile }) => {
   const { user, isAuthenticated, signOut, setShowAuthModal, selectRole, isApprovedExpert } = useAuth();
   const { t } = useLanguage();
-  const [showProfileModal, setShowProfileModal] = useState(false);
+  const [showLocalProfileModal, setShowLocalProfileModal] = useState(false);
+
+  const handleOpenProfile = () => {
+    if (onOpenProfile) {
+      onOpenProfile();
+    } else {
+      setShowLocalProfileModal(true);
+    }
+  };
 
   return (
     <header className="sticky top-0 z-40 bg-[#FFFFFF]/95 backdrop-blur-md border-b border-[#E0D7C6] transition-all">
@@ -82,7 +91,7 @@ export const Navbar: React.FC<NavbarProps> = ({ currentView, onNavigate }) => {
           {isAuthenticated ? (
             <div className="flex items-center gap-2">
               <button
-                onClick={() => setShowProfileModal(true)}
+                onClick={handleOpenProfile}
                 className="flex items-center gap-2 px-2.5 py-1.5 rounded-xl border border-[#E0D7C6] bg-white hover:bg-[#F9F6F0] transition-colors cursor-pointer group text-left"
                 title="View Account & Accreditation Profile"
                 aria-label="View Profile"
@@ -124,11 +133,13 @@ export const Navbar: React.FC<NavbarProps> = ({ currentView, onNavigate }) => {
             </Button>
           )}
 
-          {/* User Profile Modal */}
-          <UserProfileModal
-            isOpen={showProfileModal}
-            onClose={() => setShowProfileModal(false)}
-          />
+          {/* User Profile Modal fallback if not managed by parent */}
+          {!onOpenProfile && (
+            <UserProfileModal
+              isOpen={showLocalProfileModal}
+              onClose={() => setShowLocalProfileModal(false)}
+            />
+          )}
         </div>
       </div>
     </header>

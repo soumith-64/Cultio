@@ -1,18 +1,24 @@
 'use client';
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { useAuth } from '@/context/AuthContext';
 import { Button } from '@/components/ui/Button';
 import { ShieldCheck, MapPin, Camera, Database, FileSpreadsheet, Lock } from 'lucide-react';
 
 export const PrivacyConsentModal: React.FC = () => {
   const { showConsentModal, grantPrivacyConsent, declinePrivacyConsent } = useAuth();
+  const [mounted, setMounted] = useState(false);
 
-  if (!showConsentModal) return null;
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
-  return (
+  if (!showConsentModal || !mounted) return null;
+
+  return createPortal(
     <div
-      className="fixed inset-0 z-50 overflow-y-auto bg-[#4E342E]/60 backdrop-blur-sm p-3 sm:p-6 animate-fadeIn"
+      className="fixed inset-0 z-[99999] overflow-y-auto bg-[#4E342E]/60 backdrop-blur-sm p-3 sm:p-6 animate-fadeIn"
       role="dialog"
       aria-modal="true"
       aria-labelledby="privacy-modal-title"
@@ -109,6 +115,7 @@ export const PrivacyConsentModal: React.FC = () => {
           </div>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 };

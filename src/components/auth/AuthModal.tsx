@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { useAuth } from '@/context/AuthContext';
 import { Button } from '@/components/ui/Button';
 import { UserRole } from '@/types';
@@ -32,6 +33,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ initialRole }) => {
     isLoading,
   } = useAuth();
 
+  const [mounted, setMounted] = useState(false);
   const [mode, setMode] = useState<'signin' | 'signup'>('signin');
   const [role, setRole] = useState<UserRole>(initialRole || 'farmer');
 
@@ -52,12 +54,16 @@ export const AuthModal: React.FC<AuthModalProps> = ({ initialRole }) => {
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
   useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  useEffect(() => {
     if (initialRole) {
       setRole(initialRole);
     }
   }, [initialRole]);
 
-  if (!showAuthModal) return null;
+  if (!showAuthModal || !mounted) return null;
 
   const handleClose = () => {
     setShowAuthModal(false);
@@ -135,9 +141,9 @@ export const AuthModal: React.FC<AuthModalProps> = ({ initialRole }) => {
     }
   };
 
-  return (
+  return createPortal(
     <div
-      className="fixed inset-0 z-50 overflow-y-auto bg-[#4E342E]/60 backdrop-blur-sm p-3 sm:p-6 animate-fadeIn"
+      className="fixed inset-0 z-[99999] overflow-y-auto bg-[#4E342E]/60 backdrop-blur-sm p-3 sm:p-6 animate-fadeIn"
       role="dialog"
       aria-modal="true"
       onClick={handleClose}
@@ -548,6 +554,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ initialRole }) => {
           )}
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 };
