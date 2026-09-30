@@ -10,12 +10,10 @@ import {
   ShieldCheck,
   Lock,
   User,
-  Phone,
   ArrowRight,
   CheckCircle2,
   Sparkles,
   Award,
-  KeyRound,
 } from 'lucide-react';
 import { PhoneEmailButton } from './PhoneEmailButton';
 
@@ -31,21 +29,13 @@ export const AuthModal: React.FC<AuthModalProps> = ({ initialRole }) => {
     signInWithEmail,
     signUpWithEmail,
     loginWithPhoneEmail,
-    sendPhoneOtp,
-    verifyPhoneOtp,
     isLoading,
   } = useAuth();
 
   const [mode, setMode] = useState<'signin' | 'signup'>('signin');
   const [role, setRole] = useState<UserRole>(initialRole || 'farmer');
-  
-  // Farmer authentication method: phone (default) vs email
-  const [farmerAuthMethod, setFarmerAuthMethod] = useState<'phone' | 'email'>('phone');
-  
-  // Phone OTP state
-  const [phoneNumber, setPhoneNumber] = useState('');
-  const [otpCode, setOtpCode] = useState('');
-  const [otpSent, setOtpSent] = useState(false);
+
+  // Phone verification state
   const [isVerifyingPhone, setIsVerifyingPhone] = useState(false);
   const [phoneSuccessMsg, setPhoneSuccessMsg] = useState<string | null>(null);
 
@@ -53,12 +43,12 @@ export const AuthModal: React.FC<AuthModalProps> = ({ initialRole }) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [displayName, setDisplayName] = useState('');
-  
+
   // Expert-specific registration fields
   const [specialization, setSpecialization] = useState('Plant Pathology & Crop Health');
   const [licenseNumber, setLicenseNumber] = useState('');
   const [institution, setInstitution] = useState('');
-  
+
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
   useEffect(() => {
@@ -72,39 +62,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ initialRole }) => {
   const handleClose = () => {
     setShowAuthModal(false);
     setErrorMsg(null);
-    setOtpSent(false);
-    setOtpCode('');
-  };
-
-  const handleSendPhoneOtp = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setErrorMsg(null);
-    const cleaned = phoneNumber.replace(/[^0-9]/g, '');
-    if (cleaned.length < 10) {
-      setErrorMsg('Please enter a valid 10-digit mobile number.');
-      return;
-    }
-    const fullNumber = cleaned.startsWith('91') && cleaned.length > 10 ? `+${cleaned}` : `+91${cleaned}`;
-    const res = await sendPhoneOtp(fullNumber);
-    if (res.success) {
-      setOtpSent(true);
-      setPhoneSuccessMsg(`Verification code sent to ${fullNumber}`);
-    } else {
-      setErrorMsg(res.error || 'Failed to send OTP.');
-    }
-  };
-
-  const handleVerifyPhoneOtp = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setErrorMsg(null);
-    if (!otpCode.trim() || otpCode.trim().length !== 6) {
-      setErrorMsg('Please enter the 6-digit OTP code.');
-      return;
-    }
-    const res = await verifyPhoneOtp(otpCode.trim());
-    if (!res.success) {
-      setErrorMsg(res.error || 'Invalid OTP code.');
-    }
+    setPhoneSuccessMsg(null);
   };
 
   const handleInstantDemoExpertLogin = async () => {
@@ -242,12 +200,14 @@ export const AuthModal: React.FC<AuthModalProps> = ({ initialRole }) => {
                 ? mode === 'signin'
                   ? 'Agronomist Terminal Sign In'
                   : 'Register Expert Account'
-                : 'Cultivator Sign In / Register'}
+                : mode === 'signin'
+                ? 'Sign in as Cultivator'
+                : 'Create Cultivator Account'}
             </h2>
             <p className="text-xs text-[#795548] mt-0.5">
               {role === 'expert'
                 ? 'Clinical access for certified crop advisors and ICAR researchers.'
-                : 'Sign in with your mobile phone or email to access crop health diagnostics.'}
+                : 'Access real-time crop disease diagnostics, soil telemetry, and verified field reports.'}
             </p>
           </div>
 
@@ -258,236 +218,40 @@ export const AuthModal: React.FC<AuthModalProps> = ({ initialRole }) => {
           )}
 
           {/* ============================================================== */}
-          {/* TAB 1: FARMER / CULTIVATOR AUTHENTICATION                     */}
+          {/* TAB 1: FARMER / CULTIVATOR                                     */}
           {/* ============================================================== */}
           {role === 'farmer' && (
             <div className="space-y-3.5">
-              {/* Farmer Sub-Tabs: Phone (Primary) vs Email */}
-              <div className="grid grid-cols-2 gap-1 p-1 bg-[#F9F6F0] rounded-xl border border-[#E0D7C6]">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setFarmerAuthMethod('phone');
-                    setErrorMsg(null);
-                  }}
-                  className={`py-1.5 px-3 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
-                    farmerAuthMethod === 'phone'
-                      ? 'bg-white text-[#2E7D32] shadow-xs border border-[#E0D7C6]/60'
-                      : 'text-[#795548] hover:text-[#4E342E]'
-                  }`}
-                >
-                  <Phone className="w-3.5 h-3.5 text-[#2E7D32]" />
-                  <span>Mobile Phone</span>
-                </button>
+              {/* Official Phone.Email Button Only */}
+              <div className="p-3.5 rounded-2xl bg-[#2E7D32]/5 border border-[#2E7D32]/20 space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-bold uppercase tracking-wider text-[#2E7D32] flex items-center gap-1.5">
+                    <span>📱</span>
+                    <span>Instant Mobile OTP</span>
+                  </span>
+                  <span className="text-[10px] font-bold uppercase px-2 py-0.5 rounded-full bg-[#2E7D32] text-white">
+                    Recommended
+                  </span>
+                </div>
+                <p className="text-[11px] text-[#795548] leading-tight">
+                  Sign in or register directly using real WhatsApp or SMS OTP via Phone.Email.
+                </p>
 
-                <button
-                  type="button"
-                  onClick={() => {
-                    setFarmerAuthMethod('email');
-                    setErrorMsg(null);
-                  }}
-                  className={`py-1.5 px-3 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
-                    farmerAuthMethod === 'email'
-                      ? 'bg-white text-[#2E7D32] shadow-xs border border-[#E0D7C6]/60'
-                      : 'text-[#795548] hover:text-[#4E342E]'
-                  }`}
-                >
-                  <Mail className="w-3.5 h-3.5 text-[#795548]" />
-                  <span>Email & Password</span>
-                </button>
+                <PhoneEmailButton
+                  clientId="13311688567845248231"
+                  onSuccess={handlePhoneSuccess}
+                  disabled={isLoading || isVerifyingPhone}
+                />
+
+                {phoneSuccessMsg && (
+                  <div className="p-2.5 rounded-xl bg-[#2E7D32]/15 border border-[#2E7D32]/30 text-[#2E7D32] text-xs font-bold flex items-center gap-1.5 animate-fadeIn">
+                    <CheckCircle2 className="w-4 h-4 text-[#2E7D32]" />
+                    <span>{phoneSuccessMsg}</span>
+                  </div>
+                )}
               </div>
 
-              {/* METHOD A: DIRECT MOBILE PHONE NUMBER & OTP */}
-              {farmerAuthMethod === 'phone' && (
-                <div className="space-y-3">
-                  {!otpSent ? (
-                    <form onSubmit={handleSendPhoneOtp} className="space-y-3">
-                      <div>
-                        <label className="block text-xs font-bold uppercase tracking-wider text-[#795548] mb-1">
-                          Mobile Phone Number
-                        </label>
-                        <div className="flex gap-2">
-                          <div className="flex items-center px-3 py-2.5 rounded-xl border border-[#E0D7C6] bg-[#F9F6F0] text-xs font-bold text-[#4E342E] shrink-0">
-                            <span>🇮🇳 +91</span>
-                          </div>
-                          <input
-                            type="tel"
-                            placeholder="Enter 10-digit mobile number"
-                            value={phoneNumber}
-                            onChange={(e) => setPhoneNumber(e.target.value)}
-                            maxLength={10}
-                            className="flex-1 px-3.5 py-2.5 rounded-xl border border-[#E0D7C6] bg-[#F9F6F0] text-[#4E342E] placeholder-[#795548]/50 text-sm focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#2E7D32]"
-                            required
-                          />
-                        </div>
-                      </div>
-
-                      <Button
-                        type="submit"
-                        variant="primary"
-                        size="md"
-                        isLoading={isLoading}
-                        className="w-full font-bold shadow-earth"
-                      >
-                        Send Verification OTP
-                      </Button>
-                    </form>
-                  ) : (
-                    <form onSubmit={handleVerifyPhoneOtp} className="space-y-3 animate-fadeIn">
-                      {phoneSuccessMsg && (
-                        <div className="p-2.5 rounded-xl bg-[#2E7D32]/10 border border-[#2E7D32]/25 text-[#2E7D32] text-xs font-bold flex items-center gap-1.5">
-                          <CheckCircle2 className="w-4 h-4 text-[#2E7D32] shrink-0" />
-                          <span>{phoneSuccessMsg}</span>
-                        </div>
-                      )}
-
-                      <div>
-                        <div className="flex items-center justify-between mb-1">
-                          <label className="block text-xs font-bold uppercase tracking-wider text-[#795548]">
-                            Enter 6-Digit OTP Code
-                          </label>
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setOtpSent(false);
-                              setOtpCode('');
-                            }}
-                            className="text-[11px] text-[#2E7D32] hover:underline font-semibold cursor-pointer"
-                          >
-                            Change Number
-                          </button>
-                        </div>
-                        <input
-                          type="text"
-                          placeholder="e.g. 123456"
-                          value={otpCode}
-                          onChange={(e) => setOtpCode(e.target.value.replace(/[^0-9]/g, '').slice(0, 6))}
-                          maxLength={6}
-                          className="w-full px-3.5 py-2.5 rounded-xl border border-[#E0D7C6] bg-[#F9F6F0] text-[#4E342E] text-center text-lg font-mono tracking-widest font-bold focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#2E7D32]"
-                          required
-                        />
-                        <span className="block text-[11px] text-[#795548] mt-1 text-center">
-                          Demo test code: <code className="font-mono font-bold text-[#2E7D32]">123456</code>
-                        </span>
-                      </div>
-
-                      <Button
-                        type="submit"
-                        variant="primary"
-                        size="md"
-                        isLoading={isLoading}
-                        className="w-full font-bold shadow-earth"
-                      >
-                        Verify OTP & Sign In
-                      </Button>
-                    </form>
-                  )}
-
-                  {/* 1-Tap Instant WhatsApp / SMS Verification via Phone.Email */}
-                  <div className="pt-1">
-                    <div className="relative my-2.5 flex items-center justify-center">
-                      <div className="border-t border-[#E0D7C6] w-full" />
-                      <span className="bg-[#FFFFFF] px-2.5 text-[10px] uppercase tracking-wider text-[#795548] font-bold">
-                        Or 1-Tap Instant Verification
-                      </span>
-                    </div>
-
-                    <PhoneEmailButton
-                      clientId="13311688567845248231"
-                      onSuccess={handlePhoneSuccess}
-                      disabled={isLoading || isVerifyingPhone}
-                    />
-                  </div>
-                </div>
-              )}
-
-              {/* METHOD B: EMAIL & PASSWORD FORM */}
-              {farmerAuthMethod === 'email' && (
-                <form onSubmit={handleEmailSubmit} className="space-y-3 animate-fadeIn">
-                  {mode === 'signup' && (
-                    <div>
-                      <label className="block text-xs font-bold uppercase tracking-wider text-[#795548] mb-1">
-                        Full Name
-                      </label>
-                      <input
-                        type="text"
-                        placeholder="Ravi Kumar"
-                        value={displayName}
-                        onChange={(e) => setDisplayName(e.target.value)}
-                        className="w-full px-3.5 py-2.5 rounded-xl border border-[#E0D7C6] bg-[#F9F6F0] text-[#4E342E] text-sm focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#2E7D32]"
-                        required
-                      />
-                    </div>
-                  )}
-
-                  <div>
-                    <label className="block text-xs font-bold uppercase tracking-wider text-[#795548] mb-1">
-                      Email Address
-                    </label>
-                    <input
-                      type="email"
-                      placeholder="farmer@field.agri"
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      className="w-full px-3.5 py-2.5 rounded-xl border border-[#E0D7C6] bg-[#F9F6F0] text-[#4E342E] text-sm focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#2E7D32]"
-                      required
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-xs font-bold uppercase tracking-wider text-[#795548] mb-1">
-                      Password
-                    </label>
-                    <input
-                      type="password"
-                      placeholder="••••••••"
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      className="w-full px-3.5 py-2.5 rounded-xl border border-[#E0D7C6] bg-[#F9F6F0] text-[#4E342E] text-sm focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#2E7D32]"
-                      required
-                      minLength={6}
-                    />
-                  </div>
-
-                  <Button
-                    type="submit"
-                    variant="primary"
-                    size="md"
-                    isLoading={isLoading}
-                    className="w-full font-bold shadow-earth"
-                  >
-                    {mode === 'signin' ? 'Sign In with Email' : 'Create Cultivator Account'}
-                  </Button>
-
-                  <div className="text-center text-xs text-[#795548] pt-1">
-                    {mode === 'signin' ? (
-                      <span>
-                        New cultivator?{' '}
-                        <button
-                          type="button"
-                          onClick={() => setMode('signup')}
-                          className="font-bold text-[#2E7D32] hover:underline cursor-pointer"
-                        >
-                          Register here
-                        </button>
-                      </span>
-                    ) : (
-                      <span>
-                        Already registered?{' '}
-                        <button
-                          type="button"
-                          onClick={() => setMode('signin')}
-                          className="font-bold text-[#2E7D32] hover:underline cursor-pointer"
-                        >
-                          Sign in here
-                        </button>
-                      </span>
-                    )}
-                  </div>
-                </form>
-              )}
-
-              {/* Google Continue (Always available for farmers) */}
+              {/* Or with Google */}
               <div className="relative my-2.5 flex items-center justify-center">
                 <div className="border-t border-[#E0D7C6] w-full" />
                 <span className="bg-[#FFFFFF] px-2.5 text-[10px] uppercase tracking-wider text-[#795548] font-bold">
@@ -508,11 +272,102 @@ export const AuthModal: React.FC<AuthModalProps> = ({ initialRole }) => {
                 </svg>
                 <span>Continue with Google</span>
               </button>
+
+              {/* Or with Email & Password */}
+              <div className="relative my-2.5 flex items-center justify-center">
+                <div className="border-t border-[#E0D7C6] w-full" />
+                <span className="bg-[#FFFFFF] px-2.5 text-[10px] uppercase tracking-wider text-[#795548] font-bold">
+                  Or with email & password
+                </span>
+              </div>
+
+              <form onSubmit={handleEmailSubmit} className="space-y-3">
+                {mode === 'signup' && (
+                  <div>
+                    <label className="block text-xs font-bold uppercase tracking-wider text-[#795548] mb-1">
+                      Full Name
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="Ravi Kumar"
+                      value={displayName}
+                      onChange={(e) => setDisplayName(e.target.value)}
+                      className="w-full px-3.5 py-2.5 rounded-xl border border-[#E0D7C6] bg-[#F9F6F0] text-[#4E342E] text-sm focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#2E7D32]"
+                      required
+                    />
+                  </div>
+                )}
+
+                <div>
+                  <label className="block text-xs font-bold uppercase tracking-wider text-[#795548] mb-1">
+                    Email Address
+                  </label>
+                  <input
+                    type="email"
+                    placeholder="farmer@field.agri"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-[#E0D7C6] bg-[#F9F6F0] text-[#4E342E] text-sm focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#2E7D32]"
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold uppercase tracking-wider text-[#795548] mb-1">
+                    Password
+                  </label>
+                  <input
+                    type="password"
+                    placeholder="••••••••"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-[#E0D7C6] bg-[#F9F6F0] text-[#4E342E] text-sm focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#2E7D32]"
+                    required
+                    minLength={6}
+                  />
+                </div>
+
+                <Button
+                  type="submit"
+                  variant="primary"
+                  size="md"
+                  isLoading={isLoading}
+                  className="w-full font-bold shadow-earth"
+                >
+                  {mode === 'signin' ? 'Sign In with Email' : 'Create Cultivator Account'}
+                </Button>
+
+                <div className="text-center text-xs text-[#795548] pt-1">
+                  {mode === 'signin' ? (
+                    <span>
+                      Don&apos;t have an account?{' '}
+                      <button
+                        type="button"
+                        onClick={() => setMode('signup')}
+                        className="font-bold text-[#2E7D32] hover:underline cursor-pointer"
+                      >
+                        Create one now
+                      </button>
+                    </span>
+                  ) : (
+                    <span>
+                      Already registered?{' '}
+                      <button
+                        type="button"
+                        onClick={() => setMode('signin')}
+                        className="font-bold text-[#2E7D32] hover:underline cursor-pointer"
+                      >
+                        Sign in here
+                      </button>
+                    </span>
+                  )}
+                </div>
+              </form>
             </div>
           )}
 
           {/* ============================================================== */}
-          {/* TAB 2: AGRICULTURAL EXPERT AUTHENTICATION                      */}
+          {/* TAB 2: AGRICULTURAL EXPERT                                     */}
           {/* ============================================================== */}
           {role === 'expert' && (
             <div className="space-y-3.5 animate-fadeIn">
