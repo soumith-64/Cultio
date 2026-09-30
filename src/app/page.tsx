@@ -44,6 +44,7 @@ function CultivoApp() {
     setShowAuthModal,
     setShowRoleModal,
     setShowConsentModal,
+    isApprovedExpert,
   } = useAuth();
 
   const [currentView, setCurrentView] = useState<'landing' | 'farmer' | 'expert' | 'scan' | 'report'>('landing');
@@ -56,30 +57,43 @@ function CultivoApp() {
 
   // Automatically adapt view based on user role when authenticated
   useEffect(() => {
-    if (isAuthenticated && user?.role) {
-      if (currentView === 'landing') {
-        setCurrentView(user.role === 'expert' ? 'expert' : 'farmer');
+    if (isAuthenticated) {
+      if (user?.role === 'farmer') {
+        // Farmers should ONLY ever access 'farmer', 'scan', or 'report'
+        if (currentView === 'expert' || currentView === 'landing') {
+          setCurrentView('farmer');
+        }
+      } else if (user?.role === 'expert') {
+        if (currentView === 'landing') {
+          setCurrentView(isApprovedExpert ? 'expert' : 'farmer');
+        }
+      }
+    } else {
+      if (currentView === 'expert') {
+        setCurrentView('landing');
       }
     }
-  }, [isAuthenticated, user?.role, currentView]);
+  }, [isAuthenticated, user?.role, currentView, isApprovedExpert]);
 
   // Real-time synchronization subscription based on current active view
   useEffect(() => {
     let unsubscribe = () => {};
 
-    if (currentView === 'expert' || user?.role === 'expert') {
+    // ONLY certified accredited experts in expert view may query the full case queue
+    if (user?.role === 'expert' && isApprovedExpert && currentView === 'expert') {
       unsubscribe = ReportsService.subscribeToExpertQueue((queue) => {
         setReports(queue);
       });
     } else {
-      const farmerId = user?.uid || 'sample_farmer_uid';
+      // Farmers and general users strictly receive their own genuine plot reports
+      const farmerId = user?.uid || 'guest_farmer';
       unsubscribe = ReportsService.subscribeToFarmerReports(farmerId, (list) => {
         setReports(list);
       });
     }
 
     return () => unsubscribe();
-  }, [currentView, user?.role, user?.uid]);
+  }, [currentView, user?.role, user?.uid, isApprovedExpert]);
 
   // Check requirements before triggering scan workflow
   const handleStartScan = () => {
@@ -401,7 +415,7 @@ function CultivoApp() {
         )}
 
         {/* VIEW 2: FARMER DASHBOARD */}
-        {currentView === 'farmer' && !isProcessing && (
+        {(currentView === 'farmer' || (user?.role === 'farmer' && currentView === 'expert')) && !isProcessing && (
           <FarmerDashboard
             onScanClick={handleStartScan}
             reports={reports}
@@ -436,13 +450,13 @@ function CultivoApp() {
             initialReport={activeReport}
             onBack={() => {
               setActiveReport(null);
-              setCurrentView(user?.role === 'expert' ? 'expert' : 'farmer');
+              setCurrentView(user?.role === 'expert' && isApprovedExpert ? 'expert' : 'farmer');
             }}
           />
         )}
 
-        {/* VIEW 6: AGRICULTURAL EXPERT PORTAL */}
-        {currentView === 'expert' && (
+        {/* VIEW 6: AGRICULTURAL EXPERT PORTAL — STRICTLY FOR CERTIFIED EXPERTS */}
+        {currentView === 'expert' && user?.role === 'expert' && isApprovedExpert && (
           <ExpertDashboard
             reports={reports}
             onReportReviewed={(updatedRep) => {

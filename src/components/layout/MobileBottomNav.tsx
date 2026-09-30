@@ -25,7 +25,7 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({
   onStartScan,
   onOpenProfile,
 }) => {
-  const { user, isAuthenticated, setShowAuthModal } = useAuth();
+  const { user, isAuthenticated, setShowAuthModal, isApprovedExpert } = useAuth();
   const { t } = useLanguage();
 
   return (
@@ -62,8 +62,8 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({
           </span>
         </button>
 
-        {/* Expert Portal Direct Link (Expert Role Only) */}
-        {user?.role === 'expert' && (
+        {/* Expert Portal Direct Link (Approved Expert Role Only) */}
+        {user?.role === 'expert' && isApprovedExpert && (
           <Link
             href="/expert"
             className="flex flex-col items-center justify-center py-1 px-2.5 rounded-xl text-[#795548] hover:text-[#2E7D32] transition-all cursor-pointer"

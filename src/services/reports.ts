@@ -48,9 +48,13 @@ function getLocalReports(): CropReport[] {
     if (!raw) return [];
     const parsed: CropReport[] = JSON.parse(raw);
     
-    // Filter out any legacy dummy records if they exist
+    // Filter out any legacy dummy or mock records if they exist
     return parsed.filter(
-      (r) => !r.id.startsWith('report_demo_') && r.farmer_id !== 'sample_farmer_uid'
+      (r) =>
+        !r.id.startsWith('report_demo_') &&
+        !r.id.startsWith('mock_') &&
+        !r.id.startsWith('seed_') &&
+        r.farmer_id !== 'sample_farmer_uid'
     );
   } catch {
     return [];
@@ -225,6 +229,8 @@ export class ReportsService {
     farmerId: string,
     callback: (reports: CropReport[]) => void
   ): Unsubscribe {
+    let firestoreUnsub = () => {};
+
     if (isFirebaseConfigured && db) {
       // Query single field without multi-field composite index dependency
       const q = query(
@@ -232,12 +238,19 @@ export class ReportsService {
         where('farmer_id', '==', farmerId)
       );
 
-      return onSnapshot(
+      firestoreUnsub = onSnapshot(
         q,
         (snapshot) => {
           const list: CropReport[] = [];
           snapshot.forEach((docSnap) => {
             list.push(docSnap.data() as CropReport);
+          });
+          // Also incorporate any freshly captured local scan for this farmer
+          const local = getLocalReports();
+          local.forEach((loc) => {
+            if (loc.farmer_id === farmerId && !list.some((r) => r.id === loc.id)) {
+              list.push(loc);
+            }
           });
           // Sort client-side by created_at descending
           list.sort(
@@ -254,21 +267,28 @@ export class ReportsService {
       );
     }
 
-    // Local reactive listener
-    const handler = () => {
+    // Local reactive listener + 1-second interval polling for real-time synchronization
+    const syncHandler = () => {
       const reports = getLocalReports();
-      const userReports = reports.filter((r) => r.farmer_id === farmerId);
+      const userReports = reports.filter(
+        (r) => r.farmer_id === farmerId || (farmerId !== 'guest_farmer' && r.farmer_id === 'guest_farmer')
+      );
       callback(userReports);
     };
 
-    handler();
+    syncHandler();
 
-    window.addEventListener(SYNC_EVENT_NAME, handler);
-    window.addEventListener('storage', handler);
+    // High-frequency 1-second continuous telemetry sync to ensure real-time reactive updates
+    const syncInterval = setInterval(syncHandler, 1000);
+
+    window.addEventListener(SYNC_EVENT_NAME, syncHandler);
+    window.addEventListener('storage', syncHandler);
 
     return () => {
-      window.removeEventListener(SYNC_EVENT_NAME, handler);
-      window.removeEventListener('storage', handler);
+      firestoreUnsub();
+      clearInterval(syncInterval);
+      window.removeEventListener(SYNC_EVENT_NAME, syncHandler);
+      window.removeEventListener('storage', syncHandler);
     };
   }
 
