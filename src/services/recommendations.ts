@@ -10,7 +10,10 @@ export interface IRecommendationService {
   getRecommendations(
     plantType: string,
     diseaseName: string,
-    severity: string
+    severity: string,
+    confidenceLevel?: string,
+    recommendedNextSteps?: string[],
+    differentialDiagnoses?: Array<{ condition: string; rationale: string }>
   ): Promise<RecommendationPlan>;
 }
 
@@ -38,7 +41,7 @@ const KNOWLEDGE_CATALOG: Record<string, RecommendationPlan> = {
     ordered_action_plan: [
       'Step 1: Immediately rogue out and bag severely infected leaves to halt spore spread.',
       'Step 2: Cease overhead spraying; ensure surface drip or trench watering only.',
-      'Step 3: Apply the recommended protective bio-copper or systemic spray on remaining foliage.',
+      'Step 3: Apply protective bio-copper or systemic spray on remaining foliage.',
       'Step 4: Re-evaluate lesion boundaries in 72 hours and record disease progression.',
     ],
   },
@@ -146,14 +149,62 @@ export class LocalRecommendationService implements IRecommendationService {
   async getRecommendations(
     plantType: string,
     diseaseName: string,
-    severity: string
+    severity: string,
+    confidenceLevel?: string,
+    recommendedNextSteps?: string[],
+    differentialDiagnoses?: Array<{ condition: string; rationale: string }>
   ): Promise<RecommendationPlan> {
     // Latency simulation for decoupled retrieval
-    await new Promise((resolve) => setTimeout(resolve, 350));
+    await new Promise((resolve) => setTimeout(resolve, 300));
+
+    const isUncertainOrProbable =
+      confidenceLevel !== 'High' ||
+      diseaseName.toLowerCase().includes('probable') ||
+      diseaseName.toLowerCase().includes('uncertain') ||
+      plantType.toLowerCase().includes('uncertain');
+
+    // CONSERVATIVE AGRONOMIC PROTOCOL:
+    // If the visual diagnosis is uncertain or has differentials, do NOT prescribe specific chemicals
+    // as if the pathogen were confirmed. Recommend non-specific, low-risk actions first.
+    if (isUncertainOrProbable) {
+      const initialSteps =
+        recommendedNextSteps && recommendedNextSteps.length > 0
+          ? recommendedNextSteps.map((step, idx) => `Step ${idx + 1}: ${step}`)
+          : [
+              `Step 1: Inspect and isolate symptomatic leaves; avoid manual handling while foliage is wet.`,
+              `Step 2: Transition from overhead sprinkler to ground-level drip irrigation to keep leaf canopy dry.`,
+              `Step 3: Apply low-risk organic bio-protectant (cold-pressed neem oil 5 mL/L or potassium bicarbonate).`,
+              `Step 4: Consult local extension agronomist or submit sample before applying synthetic chemical sprays.`,
+            ];
+
+      return {
+        organic_solutions: [
+          'Apply broad-spectrum botanical spray (cold-pressed neem oil 5 mL/L with emulsifier) to suppress surface fungal conidia.',
+          'Dust or spray dilute potassium bicarbonate (5 g/L) to mildly alter leaf surface pH against opportunistic fungi.',
+          'Drench root zone with bio-inoculant (Trichoderma harzianum or Bacillus subtilis) to reinforce plant systemic resistance.',
+        ],
+        chemical_solutions: [
+          'DO NOT apply targeted synthetic chemical fungicides or bactericides until pathogen origin is confirmed.',
+          'Chemical treatments must be selected only after crop species and causal pathogen are verified by extension agronomists or laboratory culture.',
+          'Consult local agricultural university / extension guidelines for registered chemistries and respect Pre-Harvest Intervals (PHI) once confirmed.',
+        ],
+        preventive_actions: [
+          'Sanitize pruning shears with 70% isopropyl alcohol between plants to prevent mechanical pathogen spread.',
+          'Eliminate overhead canopy wetting; ensure water is directed strictly at the soil base.',
+          'Prune dense interior foliage to enhance air circulation and reduce relative microclimate humidity.',
+        ],
+        monitoring_guidance: [
+          'Scout 10 marked plants across the plot daily to evaluate if necrotic lesions expand or multiply.',
+          'Examine undersides of leaves with a 10x hand lens to distinguish fungal sporulation from bacterial water-soaking.',
+          'Track local ambient relative humidity and temperature trends in Cultivo.',
+        ],
+        ordered_action_plan: initialSteps,
+      };
+    }
 
     const normalized = diseaseName.toLowerCase();
     
-    // Find matching catalog entry
+    // Find matching catalog entry for confirmed/high-confidence cases
     let matchedKey = Object.keys(KNOWLEDGE_CATALOG).find((key) =>
       normalized.includes(key)
     );
@@ -178,7 +229,7 @@ export class LocalRecommendationService implements IRecommendationService {
       ],
       chemical_solutions: [
         'Consult local extension agronomist before applying synthetic treatments.',
-        'Use targeted broad-spectrum protectant fungicide if pathogen progression accelerates.',
+        'Use targeted broad-spectrum protectant fungicide only if pathogen progression accelerates and is verified.',
       ],
       preventive_actions: [
         'Sanitize shears and pruning tools with 70% isopropyl alcohol between plants.',

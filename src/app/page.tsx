@@ -284,7 +284,10 @@ function CultivoApp() {
         await recommendationService.getRecommendations(
           diagnosis.plant_type,
           diagnosis.disease_name,
-          diagnosis.severity
+          diagnosis.severity,
+          diagnosis.confidence_level,
+          diagnosis.recommended_next_steps,
+          diagnosis.differential_diagnoses
         );
 
       // Compute longitudinal suggestions from stored previous analyses (comparing lesion area %)

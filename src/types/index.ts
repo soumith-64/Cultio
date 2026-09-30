@@ -64,14 +64,25 @@ export interface EnvironmentData {
   soil: SoilData;
 }
 
+export type ConfidenceLevel = 'High' | 'Moderate' | 'Low';
+
+export interface DifferentialDiagnosis {
+  condition: string;
+  rationale: string;
+}
+
 export interface Diagnosis {
   plant_type: string;
   disease_name: string;
   severity: Severity;
-  confidence?: number; // 0.00 to 1.00
+  confidence_level?: ConfidenceLevel;
+  confidence_explanation?: string;
+  confidence?: number; // Numeric 0.00 - 1.00 for badge compatibility (High: 0.85, Moderate: 0.55, Low: 0.30)
   uncertainty_note?: string;
   visual_symptoms?: string[];
+  differential_diagnoses?: DifferentialDiagnosis[];
   root_cause_analysis: string;
+  recommended_next_steps?: string[];
 }
 
 export interface RecommendationPlan {

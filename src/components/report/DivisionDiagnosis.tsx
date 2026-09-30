@@ -1,14 +1,18 @@
 import React from 'react';
 import { Diagnosis } from '@/types';
-import { Sparkles, AlertTriangle, Eye, Activity, CheckCircle2 } from 'lucide-react';
+import { Sparkles, AlertTriangle, Eye, Activity, CheckCircle2, GitBranch, ShieldCheck } from 'lucide-react';
 
 interface DivisionDiagnosisProps {
   diagnosis: Diagnosis;
 }
 
 export const DivisionDiagnosis: React.FC<DivisionDiagnosisProps> = ({ diagnosis }) => {
+  const confLevel =
+    diagnosis.confidence_level ||
+    ((diagnosis.confidence ?? 0) >= 0.8 ? 'High' : (diagnosis.confidence ?? 0) >= 0.5 ? 'Moderate' : 'Low');
+
   return (
-    <section className="bg-[#FFFFFF] border border-[#E0D7C6] rounded-3xl p-6 sm:p-8 shadow-earth space-y-5">
+    <section className="bg-[#FFFFFF] border border-[#E0D7C6] rounded-3xl p-6 sm:p-8 shadow-earth space-y-6">
       <div className="flex items-center justify-between pb-3 border-b border-[#E0D7C6]">
         <div className="flex items-center gap-2">
           <div className="w-8 h-8 rounded-xl bg-[#2E7D32]/10 text-[#2E7D32] flex items-center justify-center">
@@ -19,47 +23,116 @@ export const DivisionDiagnosis: React.FC<DivisionDiagnosisProps> = ({ diagnosis 
               Division 3 — AI Agronomic Analysis
             </span>
             <h2 className="text-xl sm:text-2xl font-bold text-[#4E342E]">
-              Diagnostic Explanation & Root Cause
+              Diagnostic Explanation & Differential Evaluation
             </h2>
           </div>
         </div>
 
-        {diagnosis.confidence && (
-          <div className="hidden sm:flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#81C784]/20 text-[#2E7D32] text-xs font-bold">
-            <CheckCircle2 className="w-3.5 h-3.5" />
-            <span>{(diagnosis.confidence * 100).toFixed(0)}% Confidence Match</span>
-          </div>
-        )}
+        <div
+          className={`hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold border ${
+            confLevel === 'High'
+              ? 'bg-[#81C784]/20 text-[#2E7D32] border-[#81C784]/40'
+              : confLevel === 'Low'
+              ? 'bg-[#9E9E9E]/15 text-[#616161] border-[#9E9E9E]/40'
+              : 'bg-[#FFA000]/15 text-[#E65100] border-[#FFA000]/40'
+          }`}
+        >
+          <span className="w-2 h-2 rounded-full bg-current" />
+          <span>Confidence: {confLevel}</span>
+        </div>
       </div>
 
-      {/* Uncertainty Disclaimer if present */}
-      {diagnosis.uncertainty_note && (
-        <div className="p-4 rounded-2xl bg-[#FFA000]/15 border border-[#FFA000]/40 text-[#E65100] text-sm flex items-start gap-3">
-          <AlertTriangle className="w-5 h-5 flex-shrink-0 mt-0.5 text-[#F57C00]" />
-          <div>
-            <span className="font-bold block">Scientific Uncertainty Notice:</span>
-            <span className="text-xs sm:text-sm mt-0.5 block leading-relaxed">
-              {diagnosis.uncertainty_note}
+      {/* Confidence Assessment & Short Explanation */}
+      {diagnosis.confidence_explanation && (
+        <div className="p-4 rounded-2xl bg-[#F9F6F0] border border-[#E0D7C6] flex items-start gap-3">
+          <div
+            className={`w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0 text-xs font-extrabold ${
+              confLevel === 'High'
+                ? 'bg-[#81C784]/20 text-[#2E7D32]'
+                : confLevel === 'Low'
+                ? 'bg-[#9E9E9E]/20 text-[#616161]'
+                : 'bg-[#FFA000]/20 text-[#E65100]'
+            }`}
+          >
+            {confLevel === 'High' ? 'H' : confLevel === 'Low' ? 'L' : 'M'}
+          </div>
+          <div className="space-y-0.5 min-w-0">
+            <span className="text-xs font-bold uppercase tracking-wider text-[#795548] block">
+              Image-Based Diagnostic Confidence ({confLevel})
             </span>
+            <p className="text-xs sm:text-sm text-[#4E342E] leading-relaxed">
+              {diagnosis.confidence_explanation}
+            </p>
           </div>
         </div>
       )}
 
-      {/* Visual Symptoms Observed */}
+      {/* Visual Symptoms Observed (Strictly Grounded) */}
       {diagnosis.visual_symptoms && diagnosis.visual_symptoms.length > 0 && (
-        <div className="bg-[#F9F6F0] p-4 sm:p-5 rounded-2xl border border-[#E0D7C6]">
-          <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-[#795548] mb-3">
+        <div className="bg-[#F9F6F0] p-4 sm:p-5 rounded-2xl border border-[#E0D7C6] space-y-3">
+          <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-[#795548]">
             <Eye className="w-4 h-4 text-[#2E7D32]" />
             <span>Visual Evidence Detected on Specimen:</span>
           </div>
           <ul className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-sm text-[#4E342E]">
             {diagnosis.visual_symptoms.map((symptom, i) => (
-              <li key={i} className="flex items-start gap-2 bg-white p-2.5 rounded-xl border border-[#E0D7C6]">
+              <li
+                key={i}
+                className="flex items-start gap-2.5 bg-white p-3 rounded-xl border border-[#E0D7C6] shadow-2xs"
+              >
                 <span className="w-2 h-2 rounded-full bg-[#2E7D32] mt-1.5 flex-shrink-0" />
-                <span className="leading-snug">{symptom}</span>
+                <span className="leading-snug text-xs sm:text-sm font-medium">{symptom}</span>
               </li>
             ))}
           </ul>
+        </div>
+      )}
+
+      {/* Differential Diagnoses (Plausible Alternatives with Rationales) */}
+      {diagnosis.differential_diagnoses && diagnosis.differential_diagnoses.length > 0 && (
+        <div className="bg-[#F9F6F0] p-4 sm:p-5 rounded-2xl border border-[#E0D7C6] space-y-3">
+          <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-[#795548]">
+            <GitBranch className="w-4 h-4 text-[#F57C00]" />
+            <span>Differential Diagnoses (Plausible Alternatives):</span>
+          </div>
+          <p className="text-xs text-[#795548]">
+            Symptoms have visual overlap. The following candidate conditions are under active consideration:
+          </p>
+          <div className="space-y-2.5">
+            {diagnosis.differential_diagnoses.map((diff, i) => (
+              <div
+                key={i}
+                className="bg-white p-3.5 sm:p-4 rounded-xl border border-[#E0D7C6] space-y-1 shadow-2xs"
+              >
+                <div className="flex items-center gap-2">
+                  <span className="w-5 h-5 rounded-md bg-[#FFA000]/15 text-[#E65100] text-xs font-bold flex items-center justify-center flex-shrink-0">
+                    {i + 1}
+                  </span>
+                  <span className="text-sm font-bold text-[#4E342E]">
+                    {diff.condition}
+                  </span>
+                </div>
+                <p className="text-xs sm:text-sm text-[#795548] pl-7 leading-relaxed">
+                  {diff.rationale}
+                </p>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Uncertainty Notice (Dynamically Generated) */}
+      {diagnosis.uncertainty_note && (
+        <div className="p-4 rounded-2xl bg-[#FFA000]/12 border border-[#FFA000]/40 text-[#E65100] text-sm flex items-start gap-3">
+          <AlertTriangle className="w-5 h-5 flex-shrink-0 mt-0.5 text-[#F57C00]" />
+          <div className="space-y-0.5">
+            <span className="font-bold block text-xs sm:text-sm">
+              Scientific Uncertainty Notice:
+            </span>
+            <span className="text-xs sm:text-sm block leading-relaxed text-[#795548]">
+              {diagnosis.uncertainty_note}
+            </span>
+          </div>
         </div>
       )}
 
@@ -69,10 +142,30 @@ export const DivisionDiagnosis: React.FC<DivisionDiagnosisProps> = ({ diagnosis 
           <Activity className="w-4 h-4 text-[#2E7D32]" />
           <span>Root Cause & Environmental Drivers:</span>
         </div>
-        <div className="p-5 rounded-2xl bg-white border border-[#E0D7C6] text-[#4E342E] text-base leading-relaxed font-normal shadow-sm">
+        <div className="p-5 rounded-2xl bg-white border border-[#E0D7C6] text-[#4E342E] text-sm sm:text-base leading-relaxed font-normal shadow-2xs">
           {diagnosis.root_cause_analysis}
         </div>
       </div>
+
+      {/* Recommended Safe Next Steps (Conservative & Low-Risk First) */}
+      {diagnosis.recommended_next_steps && diagnosis.recommended_next_steps.length > 0 && (
+        <div className="bg-[#2E7D32]/5 p-4 sm:p-5 rounded-2xl border border-[#2E7D32]/20 space-y-3">
+          <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-[#2E7D32]">
+            <ShieldCheck className="w-4 h-4 text-[#2E7D32]" />
+            <span>Recommended Next Steps (Safe, Non-Destructive Actions):</span>
+          </div>
+          <ul className="space-y-2 text-xs sm:text-sm text-[#4E342E]">
+            {diagnosis.recommended_next_steps.map((step, i) => (
+              <li key={i} className="flex items-start gap-2.5">
+                <span className="w-5 h-5 rounded-md bg-[#2E7D32] text-white text-xs font-bold flex items-center justify-center flex-shrink-0 mt-0.5">
+                  {i + 1}
+                </span>
+                <span className="leading-relaxed font-medium">{step}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
     </section>
   );
 };
