@@ -9,10 +9,15 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "Cultivo — AI Agricultural Diagnostics & Decision Support",
+  title: "Cultio — Soil • Crop • Knowledge | AI Agricultural Diagnostics",
   description:
     "Professional field diagnostic instrument for farmers and agronomists. Capture, locate, analyze environmental conditions, diagnose crop health, and escalate to human experts in real time.",
+  icons: {
+    icon: "/logo.png",
+    apple: "/logo.png",
+  },
   keywords: [
+    "Cultio",
     "crop diagnostics",
     "plant disease",
     "agronomy",
@@ -20,7 +25,7 @@ export const metadata: Metadata = {
     "soil intelligence",
     "smart farming",
   ],
-  authors: [{ name: "Cultivo Agronomy Systems" }],
+  authors: [{ name: "Cultio Agronomy Systems" }],
 };
 
 export const viewport: Viewport = {

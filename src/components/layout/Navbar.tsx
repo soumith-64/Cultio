@@ -23,20 +23,20 @@ export const Navbar: React.FC<NavbarProps> = ({ currentView, onNavigate }) => {
           onClick={() => onNavigate('landing')}
           className="flex items-center gap-2.5 text-left focus:outline-none group cursor-pointer"
         >
-          <div className="w-10 h-10 rounded-xl bg-[#2E7D32] flex items-center justify-center text-white shadow-earth group-hover:bg-[#1B5E20] transition-colors">
-            <Sprout className="w-6 h-6 text-[#81C784]" />
+          <div className="w-11 h-11 rounded-xl overflow-hidden border border-[#2E7D32]/25 shadow-earth flex items-center justify-center bg-white group-hover:scale-105 transition-all p-0.5">
+            <img src="/logo.png" alt="Cultio Logo" className="w-full h-full object-contain" />
           </div>
           <div>
             <div className="flex items-center gap-1.5">
               <span className="font-extrabold text-xl tracking-tight text-[#2E7D32]">
-                CULTIVO
+                CULTIO
               </span>
               <span className="text-[10px] font-bold tracking-wider uppercase px-1.5 py-0.5 rounded bg-[#EFE8DC] text-[#795548]">
-                v1.0
+                SOIL • CROP
               </span>
             </div>
             <p className="text-[11px] text-[#795548] font-medium leading-tight hidden sm:block">
-              AI Agricultural Diagnostics & Decision Support
+              Soil • Crop • Knowledge | AI Diagnostics
             </p>
           </div>
         </button>

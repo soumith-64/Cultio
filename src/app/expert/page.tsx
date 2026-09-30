@@ -99,13 +99,13 @@ export default function ExpertPortalPage() {
               href="/"
               className="flex items-center gap-2.5 group cursor-pointer"
             >
-              <div className="w-10 h-10 rounded-xl bg-[#2E7D32] flex items-center justify-center text-white shadow-earth">
-                <ShieldCheck className="w-6 h-6 text-[#81C784]" />
+              <div className="w-11 h-11 rounded-xl overflow-hidden border border-[#2E7D32]/25 shadow-earth flex items-center justify-center bg-white group-hover:scale-105 transition-all p-0.5">
+                <img src="/logo.png" alt="Cultio Logo" className="w-full h-full object-contain" />
               </div>
               <div>
                 <div className="flex items-center gap-1.5">
                   <span className="font-extrabold text-xl tracking-tight text-[#2E7D32]">
-                    CULTIVO
+                    CULTIO
                   </span>
                   <span className="text-[10px] font-extrabold tracking-wider uppercase px-2 py-0.5 rounded-full bg-[#2E7D32] text-white">
                     EXPERT
